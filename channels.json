@@ -1,0 +1,8 @@
+{
+    "imageChannels": {
+        "type": "image"  
+    },
+    "messageChannels": {
+        "type": "message"
+    }
+}
