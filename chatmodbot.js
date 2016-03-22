@@ -65,6 +65,9 @@
 				jsonfs.writeFileSync("/root/TriBot/chatmodbot/channels.json", JSONallChannels);
 			}
 
+			if (resetCheck(message)){
+				messageChannels[message.channel.id].getUser(message.mentions[0].id).sentReset();
+			} 
 	});
 
 /* SUBFUNCTIONS */
@@ -104,15 +107,22 @@
 		}
 
 	function userSentMessage(message, channelCollection, amount){
-		var user = channelCollection[message.channel.id].getUser(message.author.id);
+		var user = channelCollection[message.channel.id].getUser(message.author.id, true);
 		if (user.addSent(amount)){
 			ModBot.deleteMessage(message);
 			ModBot.sendMessage(message.author, user.warnMessage(message.channel.name));
 		}
 	}
 
+	function resetCheck(message){
+		return (checkArray(message.author.id, powerRoles.primeUserArray) 
+			&& message.channel.id in main.messageChannels
+			&& message.mentions.length === 1
+			&& main.messageChannels[message.channel.id].getUser(message.mentions[0].id));
+	}
+
 /* POSSIBLE LOGINS */
-	ModBot.login("username", "password");
+	ModBot.login("username", "password"); 
 
 /* DEBUG */
 	function debug(message, text){
