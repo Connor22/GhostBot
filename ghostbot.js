@@ -37,6 +37,11 @@
 				if (channel.imageTracker) channel.imageTracker.update();
 				if (channel.messageTracker) channel.messageTracker.update();
 			}
+
+			for (let user in serverStore[tserver].bannedUsers){
+				if ((Date.now() - serverStore[tserver][user].timestamp >= serverStore[tserver][user].banLength))
+					unban(GhostBot.guilds.get(tserver), user, "256713025061519370");
+			}
 		}
 		jsonfs.writeFile(tempStoreLocation, serverStore, function(err){
 			if(err) console.error(err);
