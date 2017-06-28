@@ -5,7 +5,7 @@
 	global.GhostBot = new Discord.Client();
 
 /* JS FUNCTION IMPORTS */
-	const TrackerFile = require("./lib/LimitTracker.js");
+	const CLassFile = require("./lib/Classes.js");
 	const HelpersFile = require("./lib/Helpers.js");	
 	const FunctionsFile = require("./lib/Functions.js");
 
@@ -72,11 +72,11 @@
 			console.log("server has not been initiliazed");
 		}
 
-		if (message.channel.id === "234186792008417281") {
+		if (channel.static.config.addVoting) {
 			message.react("⬆").then(setTimeout(function(){message.react("⬇").catch(console.log)},2000)).catch(console.log);
 		}
 
-		if (!message.content.startsWith(server.prefix)) return; //If message does not start with designated prefix, stop.
+		if (!message.content.startsWith(server.static.config.prefix)) return; //If message does not start with designated prefix, stop.
 
 		if (!message.member){
 			message.guild.fetchMember(message.author).then(commandCheck(message, server, channel))
@@ -146,8 +146,8 @@
 	});
 
 	GhostBot.on('guildMemberAdd', member => {
-		if (serverStore[member.guild.id].bannedUsers && serverStore[member.guild.id].bannedUsers.indexOf(member.id) != -1){
-			member.addRole(serverStore[member.guild.id].softbanRole);
+		if (serverStore[member.guild.id].users[member.id] && serverStore[member.guild.id].users[member.id].isBanned){
+			member.addRole(serverStore[member.guild.id].static.roles.softban);
 		}
 	});
 
