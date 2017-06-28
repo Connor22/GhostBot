@@ -42,46 +42,46 @@
 		"modrole" : function(message){
 			if (!message.guild.roles.exists("name", splitCommand(message)[2])) throw {name: "OtherError", message: "Role not found"};
 
-			fetchServer(message).roles.mod.name = splitCommand(message)[2];
-			fetchServer(message).roles.mod.id = message.guild.roles.find("name", splitCommand(message)[2]).id;
+			fetchServer(message).static.roles.mod.name = splitCommand(message)[2];
+			fetchServer(message).static.roles.mod.id = message.guild.roles.find("name", splitCommand(message)[2]).id;
 		},
 		"logchannel" : function(message){
-			fetchServer(message).logChannel = message.channel.id;
+			fetchServer(message).static.logChannel = message.channel.id;
 		},
 		"adminrole" : function(message){
 			if (!message.guild.roles.exists("name", splitCommand(message)[2])) throw {name: "OtherError", message: "Role not found"};
 
-			fetchServer(message).roles.admin.name = splitCommand(message)[2];
-			fetchServer(message).roles.admin.id = message.guild.roles.find("name", splitCommand(message)[2]).id;
+			fetchServer(message).static.roles.admin.name = splitCommand(message)[2];
+			fetchServer(message).static.roles.admin.id = message.guild.roles.find("name", splitCommand(message)[2]).id;
 		},
 		"joinablerole" : function(message){
-			if (!fetchServer(message).joinableRoles) fetchServer(message).joinableRoles = [];
-			fetchServer(message).joinableRoles.push(splitCommand(message)[2]);
+			if (!fetchServer(message).static.roles.joinable) fetchServer(message).static.roles.joinable = [];
+			fetchServer(message).static.roles.joinable.push(splitCommand(message)[2]);
 		},
 		"jmodrole" : function(message){
 			if (!message.guild.roles.exists("name", splitCommand(message)[2])) throw {name: "OtherError", message: "Role not found"};
 
-			fetchServer(message).roles.jmod.name = splitCommand(message)[2];
-			fetchServer(message).roles.jmod.id = message.guild.roles.find("name", splitCommand(message)[2]).id;
+			fetchServer(message).static.roles.jmod.name = splitCommand(message)[2];
+			fetchServer(message).static.roles.jmod.id = message.guild.roles.find("name", splitCommand(message)[2]).id;
 		},
 		"bannedids" : function(message){
-			fetchServer(message).bannedUsers.push(splitCommand(message)[2]);
+			fetchServer(message).static.bannedUsers.push(splitCommand(message)[2]);
 		},
 		"rulesdisclaimer" : function(message){
-			if (!fetchServer(message).rules) fetchServer(message).rules = {};
+			if (!fetchServer(message).static.rules) fetchServer(message).static.rules = {};
 
 			const strip0 = stripCommand(message);
 			const disclaimer = strip0.substr(splitCommand(message)[1].length + 1);
 
-			fetchServer(message).rules.disclaimer = disclaimer;
+			fetchServer(message).static.rules.disclaimer = disclaimer;
 		},
 		// "channelrulesdisclaimer" : function(message){
-		// 	if (!fetchChannel(message).rules) fetchChannel(message).rules = {};
+		// 	if (!fetchChannel(message).static.rules) fetchChannel(message).static.rules = {};
 
 		// 	const strip0 = stripCommand(message);
 		// 	const disclaimer = strip0.substr(splitCommand(message)[1].length + 1);
 
-		// 	fetchChannel(message).rules.disclaimer = disclaimer;
+		// 	fetchChannel(message).static.rules.disclaimer = disclaimer;
 		// }
 	}
 
@@ -106,19 +106,19 @@
 		message.guild.createChannel(splitCommand_const[1]).then((channel) => {
 			channel.overwritePermissions(message.guild.roles.get(message.guild.id), {"READ_MESSAGES" : false});
 			channel.overwritePermissions(message.guild.roles.find("name", splitCommand_const[1]), {"READ_MESSAGES" : true});
-			if (!fetchServer(message).hiddens) fetchServer(message).hiddens = [];
-			fetchServer(message).hiddens.push(channel.name);
-			fetchServer(message).joinableRoles.push(channel.name);
+			if (!fetchServer(message).static.hiddens) fetchServer(message).static.hiddens = [];
+			fetchServer(message).static.hiddens.push(channel.name);
+			fetchServer(message).static.roles.joinable.push(channel.name);
 		});
 	}
 
 	function stopLimit(message){
 		const tracker = selectTracker(message, splitCommand(message)[1]);
 
-		if (!tracker.isActive()) throw {name: "CommandError", message: "Monitoring for " + splitCommand(message)[1] +" is already disabled"};
+		if (!tracker.active) throw {name: "CommandError", message: "Monitoring for " + splitCommand(message)[1] +" is already disabled"};
 
 		message.channel.sendMessage(capitalizeFirstLetter(tracker.type) + " limiting disabled on this channel.");				
-		tracker.deactivate();
+		fetchChannel(message).toggleTracker(tracker.type);
 	}
 
 	function startLimit(message){
@@ -127,9 +127,9 @@
 
 		const tracker = selectTracker(message, splitCommand(message)[1]);
 
-		if (tracker.isActive()) throw {name: "CommandError", message: "Monitoring for " + channelType +" is already enabled"};
+		if (tracker.active) throw {name: "CommandError", message: "Monitoring for " + channelType +" is already enabled"};
 
-		tracker.activate();
+		fetchChannel(message).toggleTracker(tracker.type);
 
 		message.channel.sendMessage(capitalizeFirstLetter(tracker.type) + " limiting enabled on this channel.");
 	}
@@ -138,9 +138,9 @@
 		const tracker = selectTracker(message, splitCommand(message)[1]);
 
 		if (message.mentions.users.array().length != 1) throw {name: "CommandError", message: "Only one user can have their limit reset at a time."};
-		if (!tracker.getUser(message.mentions.users.array()[0].id)) throw {name: "OtherError", message: "User has not yet been limited."};
+		//if (!tracker.getUser(message.mentions.users.array()[0].id)) throw {name: "OtherError", message: "User has not yet been limited."};
 
-		tracker.getUser(message.mentions.users.array()[0].id).sentReset();
+		fetchChannel(message).resetTracker(message.mentions.users.array()[0].id, tracker.type);
 	}
 
 	function openChannel(message){
@@ -158,6 +158,7 @@
 
 	function limitOptions(message){
 		const tracker = selectTracker(message, splitCommand(message)[1]);
+		const channel = fetchChannel(message);
 
 		//Was the type of channel valid && are there a valid number of arguments
 		if (!tracker && splitCommand(message).length > 3) throw {name: "CommandError", message: "Wrong number of inputs. \
@@ -166,14 +167,15 @@
 		//If there is a new limit defined
 		if (splitCommand(message).length === 3) {
 		  if (isNaN(splitCommand(message)[2])) throw {name: "CommandError", message: "Second argument must be a valid number"};
-		  tracker.changeLimit(parseInt(splitCommand(message)[2]));
+		  channel.changeTrackerLimit(tracker.type, parseInt(splitCommand(message)[2]));
 		}
 
-		message.channel.sendMessage(tracker.limitMessage());
+		message.channel.sendMessage(channel.getLimitMessage(tracker.type));
 	}
 
 	function periodOptions(message){
 		const tracker = selectTracker(message, splitCommand(message)[1]);
+		const channel = fetchChannel(message);
 
 		//Was the type of channel valid && are there a valid number of arguments
 		if (!tracker && splitCommand(message).length == 3 || splitCommand(message).length > 4) {
@@ -183,12 +185,13 @@
 		//If there is a new limit defined
 		if (splitCommand(message).length === 4) {
 		  if (isNaN(splitCommand(message)[2])) throw {name: "CommandError", message: "Second argument must be a valid number"};
-		  tracker.changePeriod(parseTime(splitCommand(message)[2], splitCommand(message)[3]));
+		  channel.changeTrackerPeriod(tracker.type, parseTime(splitCommand(message)[2], splitCommand(message)[3]));
 		}
 
-		message.channel.sendMessage(tracker.periodMessage());
+		message.channel.sendMessage(channel.getPeriodMessage(tracker.type));
 	}
 
+	/*
 	function inviteToChannel_prestep(message) {
 		if (message.mentions.users.array().length != 1) throw {name: "CommandError", message: "Only one user can be invited per command"};
 		
@@ -210,6 +213,7 @@
 		message.channel.sendMessage(`Invited ${invitedUser.username}`);
 		invitedUser.sendMessage(`You've been invited to join #${message.channel.name} on ${message.guild.name}\n\n${fetchChannel(message).invite}`);
 	}
+	*/
 
 	function defineVariables(message){
 		//if (splitCommand(message).length != 3) throw {name: "CommandError", message: "This command only takes 2 parameters"};
@@ -259,9 +263,9 @@
 		  .then((collected) => {
 		    section.content = collected.first().cleanContent;
 		    if (splitCommand(message)[1] === "server"){
-		    	newRuleSection(fetchServer(message), section);
+		    	newRuleSection(fetchServer(message).static, section);
 		    } else {
-		    	newRuleSection(fetchChannel(message), section);
+		    	newRuleSection(fetchChannel(message).static, section);
 		    }
 
 		    message.delete(3000);
@@ -272,19 +276,15 @@
 	function clearRules(message){
 		if (!(splitCommand(message)[1] === "server" || splitCommand(message)[1] === "channel")) throw {name: "CommandError", message: "Clear the server rules or the channel rules?"};
 		if (splitCommand(message)[1] === "server"){
-			fetchServer(message).rules.sections = [];
+			fetchServer(message).static.rules.sections = [];
 		} else {
-			fetchChannel(message).rules.sections = [];
+			fetchChannel(message).static.rules.sections = [];
 		}
 
 		message.delete(3000);
 	}
 
 /* HELPER FUNCTIONS */
-	function capitalizeFirstLetter(string) {
-	    return string.charAt(0).toUpperCase() + string.slice(1);
-	}
-
 	function newRuleSection(object, section){
 		if (!object.rules) object.rules = {};
 		if (!object.rules.sections) object.rules.sections = [];

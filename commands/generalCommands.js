@@ -7,10 +7,10 @@
 			informUserOfHiddenChannels(message);
 		},
 		"join" : function(message) {
-			joinChannel(message);
+			joinRole(message);
 		},
 		"leave" : function(message) {
-			leaveChannel(message);
+			leaveRole(message);
 		},
 		"hide" : function(message) {
 			hideChannel(message);
@@ -42,12 +42,12 @@
 	function informUserOfHisLimits(message) {
 		let constructedMessage = "Your limits on `" + message.channel.guild.name + " - #" + message.channel.name + "`: \n";
 					
-		if (selectTracker(message, "message").isActive()){
+		if (selectTracker(message, "message").active){
 			let tracker = selectTracker(message, "message");
-			let user = tracker.getUser(message.author.id);
-			if (user){
-				constructedMessage += ("```You have posted " + user.getSentAmount() + "/" + tracker.limit + " messages. \n");
-				constructedMessage += ("You have " + makeReadable(user.getTimeRemaining(), tracker.period)+ " remaining before your message limit reset \n");
+
+			if (tracker.users[message.author.id]){
+				constructedMessage += ("```You have posted " + tracker.users[message.author.id].sent + "/" + tracker.limit + " messages. \n");
+				constructedMessage += ("You have " + makeReadable(fetchChannel(message).getTimeRemaining(tracker, message.author.id)) + " remaining before your message limit reset \n");
 			} else {
 				constructedMessage += ("```You have posted 0/" + tracker.limit + " messages. \n");
 			}
@@ -61,8 +61,8 @@
 			let tracker = selectTracker(message, "image");
 			let user = tracker.getUser(message.author.id);
 			if (user){
-				constructedMessage += ("You have posted " + user.getSentAmount() + "/" + tracker.limit + " images. \n");
-				constructedMessage += ("You have " + makeReadable(user.getTimeRemaining()) + " remaining before your image limit reset```");
+				constructedMessage += ("You have posted " + tracker.users[message.author.id].sent + "/" + tracker.limit + " images. \n");
+				constructedMessage += ("You have " + makeReadable(fetchChannel(message).getTimeRemaining(tracker, message.author.id)) + " remaining before your image limit reset```");
 			} else {
 				constructedMessage += ("You have posted 0/" + tracker.limit + " images. ```");
 			}
@@ -73,18 +73,20 @@
 		message.author.sendMessage(constructedMessage);
 	}
 
-	function informUserOfHiddenChannels(message) {
-		const hiddens = fetchServer(message).hiddens;
-		let returnString = "List of Hidden Channels: \n Type `=join <channel>` to join \n Type `=leave <channel>` to leave \n```\n";
-		for (let i = hiddens.length - 1; i >= 0; i--) {
-			returnString += hiddens[i] + "\n";
+	/*
+		function informUserOfHiddenChannels(message) {
+			const hiddens = fetchServer(message).hiddens;
+			let returnString = "List of Hidden Channels: \n Type `=join <channel>` to join \n Type `=leave <channel>` to leave \n```\n";
+			for (let i = hiddens.length - 1; i >= 0; i--) {
+				returnString += hiddens[i] + "\n";
+			}
+			returnString += "\n```";
+
+			message.channel.sendMessage(returnString);
 		}
-		returnString += "\n```";
+	*/
 
-		message.channel.sendMessage(returnString);
-	}
-
-	function joinChannel(message) {
+	function joinRole(message) {
 		const roleName = splitCommand(message)[1];
 
 		if (splitCommand(message).length != 2) throw {name: "CommandError", message: "You can only join one role per command."};
@@ -94,7 +96,7 @@
 		message.member.addRole(message.guild.roles.find("name", roleName));
 	}
 
-	function leaveChannel(message) {
+	function leaveRole(message) {
 		const roleName = splitCommand(message)[1];
 
 		if (splitCommand(message).length != 2) throw {name: "CommandError", message: "You can only leave one role per command."};
@@ -140,14 +142,14 @@
 	}
 
 	function sendChannelRules(message){
-		if (!fetchChannel(message).rules || fetchChannel(message).rules === {}) throw {name: "OtherError", message: `Channel rules have not been defined for ${message.channel.name}`}
+		if (!fetchChannel(message).static.rules || fetchChannel(message).static.rules.sections === {}) throw {name: "OtherError", message: `Channel rules have not been defined for ${message.channel.name}`}
 		
 		const rulesEmbed = new Discord.RichEmbed();
 		rulesEmbed.setAuthor(`#${message.channel.name} Rules`, "http://i.imgur.com/sIcMXQ2.png");
-		rulesEmbed.setDescription(fetchServer(message).rules.disclaimer);
+		rulesEmbed.setDescription(fetchServer(message).static.rules.disclaimer);
 		rulesEmbed.setTitle("Please Note:");
-		for (var section in fetchChannel(message).rules.sections){
-			rulesEmbed.addField(fetchChannel(message).rules.sections[section].name, fetchChannel(message).rules.sections[section].content);
+		for (var section in fetchChannel(message).static.rules.sections){
+			rulesEmbed.addField(fetchChannel(message).static.rules.sections[section].name, fetchChannel(message).static.rules.sections[section].content);
 		}
 		rulesEmbed.setFooter(`From the ${message.guild.name} server`);
 		rulesEmbed.setColor(51455);
@@ -158,14 +160,14 @@
 	}
 
 	function sendGlobalRules(message){
-		if (!fetchServer(message).rules || fetchServer(message).rules === {}) throw {name: "OtherError", message: `Server rules have not been defined for ${message.guild.name}`}
+		if (!fetchServer(message).static.rules || fetchServer(message).static.rules.sections === {}) throw {name: "OtherError", message: `Server rules have not been defined for ${message.guild.name}`}
 		
 		const rulesEmbed = new Discord.RichEmbed();
 		rulesEmbed.setAuthor(`${message.guild.name} Rules`, "http://i.imgur.com/sIcMXQ2.png");
-		rulesEmbed.setDescription(fetchServer(message).rules.disclaimer);
+		rulesEmbed.setDescription(fetchServer(message).static.rules.disclaimer);
 		rulesEmbed.setTitle("Please Note:");
-		for (var section in fetchServer(message).rules.sections){
-			rulesEmbed.addField(fetchServer(message).rules.sections[section].name, fetchServer(message).rules.sections[section].content);
+		for (var section in fetchServer(message).static.rules.sections){
+			rulesEmbed.addField(fetchServer(message).static.rules.sections[section].name, fetchServer(message).static.rules.sections[section].content);
 		}
 		rulesEmbed.setColor(25725);
 

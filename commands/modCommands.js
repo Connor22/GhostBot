@@ -15,26 +15,31 @@
 	function banUser(message){
 		if (message.mentions.users.array().length != 1) throw {name: "CommandError", message: "Only one user can be banned per command"};
 
-		message.guild.members.get(message.mentions.users.first().id).addRole("256713025061519370");
-		message.channel.sendMessage("Banned <@" + message.mentions.users.array()[0].id + ">")//.then((message) => //message.delete(3000));
+		const server = fetchServer(message);
+		const userID = message.mentions.users.first().id;
 
-		if (!fetchServer(message).bannedUsers) fetchServer(message).bannedUsers = [];
-		fetchServer(message).bannedUsers.push(message.mentions.users.first().id);
+		message.guild.members.get(userID).addRole(server.static.roles.softban);
+		message.channel.sendMessage("Banned <@" + userID + ">")//.then((message) => //message.delete(3000));
+
+		server.users[userID].static.isBanned = true;
 
 		log("ban", message);
-		console.log("<@" + message.author.id + "> banned <@" + message.mentions.users.array()[0].id + ">");
+		console.log("<@" + message.author.id + "> banned <@" + userID + ">");
 	}
 
 	function unbanUser(message) {
 		if (message.mentions.users.array().length != 1) throw {name: "CommandError", message: "Only one user can be unbanned per command"};
 
-		message.guild.members.get(message.mentions.users.first().id).removeRole("256713025061519370");
-		message.channel.sendMessage("Unbanned <@" + message.mentions.users.array()[0].id + ">")//.then((message) => //message.delete(3000));
+		const server = fetchServer(message);
+		const userID = message.mentions.users.first().id;
 
-		fetchServer(message).bannedUsers.splice(fetchServer(message).bannedUsers.indexOf(message.mentions.users.first().id), 1);
+		message.guild.members.get(userID).removeRole(server.static.roles.softban);
+		message.channel.sendMessage("Unbanned <@" + userID + ">")//.then((message) => //message.delete(3000));
+
+		server.users[userID].static.isBanned = false;
 
 		log("unban", message);
-		console.log("<@" + message.author.id + "> unbanned <@" + message.mentions.users.array()[0].id + ">");
+		console.log("<@" + message.author.id + "> unbanned <@" + userID + ">");
 	}
 
 	function pruneUser(message) {

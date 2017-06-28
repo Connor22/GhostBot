@@ -25,9 +25,9 @@ class Server{
 					logChannel : "",
 				},
 				roles : {
-					admin : "",
-					mod : "",
-					jmod : "",
+					admin : {name: "", id: ""},
+					mod : {name: "", id: ""},
+					jmod : {name: "", id: ""},
 					softban : ""
 				},
 				rules : {
@@ -103,86 +103,125 @@ class Channel{
 					users: {},
 					trackLinks: false,
 				},
+				rules : {
+					embed: {}
+				}
 			}
 		}
 	}
-
-	// functions
-		update(){
-
-		};
-
-		toggleTracker(tracker){
-			const trackr = fetchTracker(tracker, this);
-			if (trackr.active){
-				trackr.active = false;
-			} else {
-				trackr.active = true;
-			}
-		};
-
-		changeTrackerPeriod(tracker, period){
-			fetchTracker(tracker, this).period = period;
-		};
-
-		changeTrackerLimit(tracker, limit){
-			fetchTracker(tracker, this).limit = limit;
-		};
-
-		toggleLinkTracking(){
-			const trackr = fetchTracker("image");
-			if (trackr.trackLinks){
-				trackr.trackLinks = false;
-			} else {
-				trackr.trackLinks = true;
-			}
-		};	
 		
-		getTrackerMessage(){};
-		getWarnMessage(tracker){
-			return "You've hit the " + fetchTracker(tracker, this).limit + " " + this.getParent().type + " limit in `#" + 
-				channelName + "`. Please wait " + 
-				makeReadable(this.getTimeRemaining()) + " before posting again";
-		};
-		define(){};
-
-		addSent(userID, tracker){
-			const trackr = fetchTracker(tracker, this);
-			const tUser = trackr.users[userID];
-			if (tUser){
-				tUser.sent += 1;
-			} else {
-				trackr.users[userID] = {
-					channelID: this.id,
-					sent: 1
+		// Toggles
+			toggleTracker(tracker){
+				const trackr = fetchTracker(tracker, this);
+				if (trackr.active){
+					trackr.active = false;
+				} else {
+					trackr.active = true;
 				}
+			};
+
+			toggleLinkTracking(){
+				const trackr = fetchTracker("image");
+				if (trackr.trackLinks){
+					trackr.trackLinks = false;
+				} else {
+					trackr.trackLinks = true;
+				}
+			};	
+
+			toggleVoting(){
+				this.static.addVoting = true;
+			};
+
+		// Change
+			changeTrackerPeriod(tracker, period){
+				fetchTracker(tracker, this).period = period;
+			};
+
+			changeTrackerLimit(tracker, limit){
+				fetchTracker(tracker, this).limit = limit;
+			};
+
+		// Getters
+			getLimitMessage(tracker){
+				return (capitalizeFirstLetter(fetchTracker(tracker, this).type) + " limit is currently " + fetchTracker(tracker, this).limit + " " + fetchTracker(tracker, this).type +"s.");
+			};
+
+			getPeriodMessage(tracker){
+				return ("Time period in which" + fetchTracker(tracker, this).type + "s are tracked is currently " + makeReadable(fetchTracker(tracker, this).period));
+			};
+
+			getWarnMessage(tracker, userID){
+				return "You've hit the " + fetchTracker(tracker, this).limit + " " + tracker + " limit in `#" + 
+					this.static.info.name + "`. Please wait " + 
+					makeReadable(this.getTimeRemaining(fetchTracker(tracker, this), userID)) + " before posting again";
+			};
+
+			getTimeRemaining(tracker, userID){
+				return tracker.period - (Date.now() - tracker.users[userID].timeStamp);
+			};
+
+			getUser(tracker, userID){
+				if (!fetchTracker(tracker, this).users[userID]) return false;
+				
+				return fetchTracker(tracker, this).users[userID];
 			}
-		};
 
-		resetTracker(userID, tracker){
-			delete fetchTracker(tracker, this).users[userID];
-		};
+		//Misc
+			update(){
+				const trackrDict = {
+					image: fetchTracker("image", this), 
+					message: fetchTracker("message", this)
+				};
 
-		getTimeRemaining(){};
+				for (let trackrName in trackrDict){
+					let trackr = trackrArray[trackrName];
+					for (let user in trackr.users){
+						if (trackr.users[user].getTimeRemaining(this.period) < 0){
+							delete this.users[user];
+						}
+					}
+				}		
+			}
 
-		toggleVoting(){
-			this.static.addVoting = true;
-		};
+			define(){};
+
+			addSent(userID, tracker){
+				const trackr = fetchTracker(tracker, this);
+				const tUser = trackr.users[userID];
+				const chanID = this.id;
+
+				if (tUser){
+					tUser.sent += 1;
+				} else {
+					trackr.users[userID] = {
+						channelID: chanID,
+						sent: 1,
+						timeStamp: Date.now();
+					}
+				}
+			};
+
+			resetTracker(userID, tracker){
+				delete fetchTracker(tracker, this).users[userID];
+			};
+
+		
 }
 
 class User{
 	constructor(options){
-		// variables
+		if (options.static){
+			this.static = options.static;
+		} else {
 			this.static = {
 				info : {
-					serverID,
+					serverID: options.serverID,
 				},
-				isBanned
+				isBanned: false;
 			}
+		}
 	}
-
-	//functions
-		getParent(){};
 }
 
 // Helper functions

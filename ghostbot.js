@@ -32,11 +32,7 @@
 /* UPDATE DICTIONARIES */
 	function updateTrackersAndSave(){
 		for (let tserver in serverStore){
-			for (let tchannel in serverStore[tserver].channels){
-				const channel = serverStore[tserver].channels[tchannel];
-				if (channel.imageTracker) channel.imageTracker.update();
-				if (channel.messageTracker) channel.messageTracker.update();
-			}
+			serverStore[tserver].update();
 		}
 		jsonfs.writeFileSync(tempStoreLocation, serverStore);
 		fs.rename(tempStoreLocation, serverStoreLocation, function(err){if(err) console.error(err);});
@@ -47,7 +43,7 @@
 /* BOOTUP SEQUENCE */
 	GhostBot.on("ready", () => {
 		console.log("ready");
-		convertTrackers(serverStore);
+		convertClasses(serverStore);
 		updateTrackersAndSave();
 	});
 	
