@@ -87,8 +87,9 @@
 	function joinChannel(message) {
 		const roleName = splitCommand(message)[1];
 
-		if (splitCommand(message).length != 2) throw {name: "CommandError", message: "You can only join one channel per command."};
-		if (!(fetchServer(message).joinableRoles.includes(roleName))) throw {name: "OtherError", message: "That channel either doesn't exist or is not joinable by users."};
+		if (splitCommand(message).length != 2) throw {name: "CommandError", message: "You can only join one role per command."};
+		if (!(fetchServer(message).joinableRoles.includes(roleName))) throw {name: "OtherError", message: "That role either doesn't exist or is not joinable by users."};
+		if (!message.member) throw {name: "OtherError", message: "You need to go online to use this command"};
 
 		message.member.addRole(message.guild.roles.find("name", roleName));
 	}
@@ -96,9 +97,10 @@
 	function leaveChannel(message) {
 		const roleName = splitCommand(message)[1];
 
-		if (splitCommand(message).length != 2) throw {name: "CommandError", message: "You can only leave one channel per command."};
-		if (!(fetchServer(message).joinableRoles.includes(roleName))) throw {name: "OtherError", message: "That channel either doesn't exist or cannot be left by users."};
-		if (!(message.member.roles.exists("name", roleName))) throw {name: "OtherError", message: "You don't appear to be in that channel."};
+		if (splitCommand(message).length != 2) throw {name: "CommandError", message: "You can only leave one role per command."};
+		if (!(fetchServer(message).joinableRoles.includes(roleName))) throw {name: "OtherError", message: "That role either doesn't exist or cannot be left by users."};
+		if (!(message.member.roles.exists("name", roleName))) throw {name: "OtherError", message: "You don't appear to be in that role."};
+		if (!message.member) throw {name: "OtherError", message: "You need to go online to use this command"};
 
 		message.member.removeRole(message.member.roles.find("name", roleName));
 	}
@@ -129,6 +131,7 @@
 
 	function ping(message) {
 		if (splitCommand(message).length === 1) message.reply("pong")//.then((message) => message.delete(3000));
+		else if (message.mentions.users.size === 1) message.reply("That user's ID is " + message.mentions.users.first().id)
 		else message.reply(`Your message was |${stripCommand(message)}`)//.then((message) => message.delete(3000));
 	}
 

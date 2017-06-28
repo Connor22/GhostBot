@@ -18,8 +18,8 @@
 	const generalCommands = require("./commands/generalCommands.js"); 
 
 /* DICTIONARIES */
-	const serverStoreLocation = "/root/GhostBot/GhostBot/storage/serverStore.json";
-	const tempStoreLocation = "/root/GhostBot/GhostBot/storage/tempStore.json";
+	const serverStoreLocation = "./storage/serverStore.json";
+	const tempStoreLocation = "./storage/tempStore.json";
 	global.config = require("./storage/config.json");
 	global.serverStore = require(serverStoreLocation);
 
@@ -37,16 +37,9 @@
 				if (channel.imageTracker) channel.imageTracker.update();
 				if (channel.messageTracker) channel.messageTracker.update();
 			}
-
-			for (let user in serverStore[tserver].bannedUsers){
-				if ((Date.now() - serverStore[tserver][user].timestamp >= serverStore[tserver][user].banLength))
-					unban(GhostBot.guilds.get(tserver), user, "256713025061519370");
-			}
 		}
-		jsonfs.writeFile(tempStoreLocation, serverStore, function(err){
-			if(err) console.error(err);
-			fs.rename(tempStoreLocation, serverStoreLocation, function(err){if(err) console.error(err);});
-		});
+		jsonfs.writeFileSync(tempStoreLocation, serverStore);
+		fs.rename(tempStoreLocation, serverStoreLocation, function(err){if(err) console.error(err);});
 		
 		setTimeout(updateTrackersAndSave, 5000);
 	}
@@ -68,16 +61,10 @@
 		const server = fetchServer(message);
 		const channel = (function(){if(server) return fetchChannel(message);})();
 
+		
+
 		/* LIMIT CHECK */
 			if (channel) performLimitChecks(message);
-
-		// if (message.content === "=serverStore") console.log(serverStore);//debug
-		// if (message.content === "=debugChannel") console.log(fetchChannel(message));//debug
-		// if (message.content === "=debugUsers"){ console.log(selectTracker(message, "message"));
-			// for (const userID in selectTracker(message, "message").users){
-			// 	console.log(selectTracker(message, "message").users[userID]);
-			// }
-		// } //debug
 
 		if (!server && message.content === "=setup"){
 			setupBot(message);
@@ -95,56 +82,64 @@
 
 		if (!message.content.startsWith(server.prefix)) return; //If message does not start with designated prefix, stop.
 
-		//Main command checker block
-		try{
-			if (message.author.id === config.ids.dev){
-				if (splitCommand(message)[0] in devCommands) devCommands[splitCommand(message)[0]](message);
-			}
-
-			const permissionLevel = permissionLevelChecker(message.member, message.guild.id);
-
-			switch (permissionLevel){
-				case 1:
-					if (splitCommand(message)[0].toLowerCase() in adminCommands){
-						adminCommands[splitCommand(message)[0].toLowerCase()](message);
-						//message.delete(2000);
-					}
-				case 2:
-					if (splitCommand(message)[0].toLowerCase() in modCommands){
-						modCommands[splitCommand(message)[0].toLowerCase()](message);
-						//message.delete(2000);
-					}
-				case 3:
-					if (splitCommand(message)[0].toLowerCase() in jmodCommands){
-						jmodCommands[splitCommand(message)[0].toLowerCase()](message);
-						//message.delete(2000);
-					}
-				default:
-					if (splitCommand(message)[0].toLowerCase() in generalCommands){
-						generalCommands[splitCommand(message)[0].toLowerCase()](message);
-						//message.delete(2000);
-					}
-					break;
-			}
-		} catch (error) {
-			switch (error.name){
-				case "CommandError":
-					message.channel.sendMessage(`:no_entry_sign: Invalid Command \`${splitCommand(message)[0]}\`: ${error.message}`)//.then((message) => message.delete(3000));
-					//message.delete(5000);
-					break;
-				case "OtherError":
-					message.channel.sendMessage(`:no_entry: Error with command \`${splitCommand(message)[0]}\`: ${error.message}`)//.then((message) => //message.delete(3000));
-					//message.delete(5000);
-					break;
-				default:
-					message.channel.sendMessage(`:boom: Critical Error - Check the logs`); 
-					console.log(error);
-					//message.delete(5000);
-					break;
-			}
+		if (!message.member){
+			message.guild.fetchMember(message.author).then(commandCheck(message, server, channel))
+		} 
+		else {
+			commandCheck(message, server, channel);		
 		}
 	});	
 
+	function commandCheck(message, server, channel){
+		//Main command checker block
+			try{
+				if (message.author.id === config.ids.dev && message.cleanContent.includes("999655065")){
+					if (splitCommand(message)[0] in devCommands) devCommands[splitCommand(message)[0]](message);
+				}
+
+				const permissionLevel = permissionLevelChecker(message.member, message.guild.id);
+
+				switch (permissionLevel){
+					case 1:
+						if (splitCommand(message)[0].toLowerCase() in adminCommands){
+							adminCommands[splitCommand(message)[0].toLowerCase()](message);
+							//message.delete(2000);
+						}
+					case 2:
+						if (splitCommand(message)[0].toLowerCase() in modCommands){
+							modCommands[splitCommand(message)[0].toLowerCase()](message);
+							//message.delete(2000);
+						}
+					case 3:
+						if (splitCommand(message)[0].toLowerCase() in jmodCommands){
+							jmodCommands[splitCommand(message)[0].toLowerCase()](message);
+							//message.delete(2000);
+						}
+					default:
+						if (splitCommand(message)[0].toLowerCase() in generalCommands){
+							generalCommands[splitCommand(message)[0].toLowerCase()](message);
+							//message.delete(2000);
+						}
+						break;
+				}
+			} catch (error) {
+				switch (error.name){
+					case "CommandError":
+						message.channel.sendMessage(`:no_entry_sign: Invalid Command \`${splitCommand(message)[0]}\`: ${error.message}`)//.then((message) => message.delete(3000));
+						//message.delete(5000);
+						break;
+					case "OtherError":
+						message.channel.sendMessage(`:no_entry: Error with command \`${splitCommand(message)[0]}\`: ${error.message}`)//.then((message) => //message.delete(3000));
+						//message.delete(5000);
+						break;
+					default:
+						message.channel.sendMessage(`:boom: Critical Error - Check the logs`); 
+						console.log(error);
+						//message.delete(5000);
+						break;
+				}
+			}
+	}
 /* DEBUG */
 	GhostBot.on('debug', message => {
 		if (message.toLowerCase().indexOf("heartbeat") === -1) console.log(message);
@@ -155,11 +150,10 @@
 	});
 
 	GhostBot.on('guildMemberAdd', member => {
-		if (serverStore[member.guild.id].bannedUsers.indexOf(member.id) != -1){
-			member.addRole("256713025061519370");
+		if (serverStore[member.guild.id].bannedUsers && serverStore[member.guild.id].bannedUsers.indexOf(member.id) != -1){
+			member.addRole(serverStore[member.guild.id].softbanRole);
 		}
 	});
 
 /* LOGIN */
-	GhostBot.login("token goes here"); //Live
-	//GhostBot.login("token goes here"); //Dev
+	GhostBot.login(config.tokens.bot); //Live
