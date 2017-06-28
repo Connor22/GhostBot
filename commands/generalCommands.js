@@ -90,7 +90,7 @@
 		const roleName = splitCommand(message)[1];
 
 		if (splitCommand(message).length != 2) throw {name: "CommandError", message: "You can only join one role per command."};
-		if (!(fetchServer(message).joinableRoles.includes(roleName))) throw {name: "OtherError", message: "That role either doesn't exist or is not joinable by users."};
+		if (!(fetchServer(message).roles.joinable[roleName])) throw {name: "OtherError", message: "That role either doesn't exist or is not joinable by users."};
 		if (!message.member) throw {name: "OtherError", message: "You need to go online to use this command"};
 
 		message.member.addRole(message.guild.roles.find("name", roleName));
@@ -100,7 +100,7 @@
 		const roleName = splitCommand(message)[1];
 
 		if (splitCommand(message).length != 2) throw {name: "CommandError", message: "You can only leave one role per command."};
-		if (!(fetchServer(message).joinableRoles.includes(roleName))) throw {name: "OtherError", message: "That role either doesn't exist or cannot be left by users."};
+		if (!(fetchServer(message).roles.joinable[roleName])) throw {name: "OtherError", message: "That role either doesn't exist or cannot be left by users."};
 		if (!(message.member.roles.exists("name", roleName))) throw {name: "OtherError", message: "You don't appear to be in that role."};
 		if (!message.member) throw {name: "OtherError", message: "You need to go online to use this command"};
 
@@ -142,7 +142,7 @@
 	}
 
 	function sendChannelRules(message){
-		if (!fetchChannel(message).static.rules || fetchChannel(message).static.rules.sections === {}) throw {name: "OtherError", message: `Channel rules have not been defined for ${message.channel.name}`}
+		if (!fetchChannel(message).static.rules || fetchChannel(message).static.rules === {}) throw {name: "OtherError", message: `Channel rules have not been defined for ${message.channel.name}`}
 		
 		const rulesEmbed = new Discord.RichEmbed();
 		rulesEmbed.setAuthor(`#${message.channel.name} Rules`, "http://i.imgur.com/sIcMXQ2.png");
@@ -160,7 +160,7 @@
 	}
 
 	function sendGlobalRules(message){
-		if (!fetchServer(message).static.rules || fetchServer(message).static.rules.sections === {}) throw {name: "OtherError", message: `Server rules have not been defined for ${message.guild.name}`}
+		if (!fetchServer(message).static.rules || fetchServer(message).static.rules.sections === []) throw {name: "OtherError", message: `Server rules have not been defined for ${message.guild.name}`}
 		
 		const rulesEmbed = new Discord.RichEmbed();
 		rulesEmbed.setAuthor(`${message.guild.name} Rules`, "http://i.imgur.com/sIcMXQ2.png");
