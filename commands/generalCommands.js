@@ -38,8 +38,11 @@
 		"serverrules" : function(message){
 			sendGlobalRules(message);
 		},
-		"vote" : function(message){
+		"propose" : function(message){
 			addVote(message);
+		},
+		"tokens" : function(message){
+			informTokens(message);
 		}
 	};
 
@@ -182,24 +185,34 @@
 	}
 
 	function addVote(message){
-		if (fetchServer(message.guild.id).getUser(message.author.id).takeToken()){
+		if (fetchServer(message).getUser(message.author.id).takeToken()){
 			sendVote(message);
+		} else {
+			 throw {name: "CommandError", message: `You don't have enough tokens for that.`}
 		}
+	}
+
+	function informTokens(message){
+		message.reply(`You have ${fetchServer(message).getUser(message.author.id).getTokens()} tokens`);
 	}
 
 // Helper Functions
 	function sendVote(message){
 		const embed = new Discord.RichEmbed();
-		embed.setAuthor("Vote");
+		embed.setAuthor("Vote Proposal", "http://i.imgur.com/1MvehEj.png");
 		embed.setDescription(stripCommand(message));
-		embed.setColor();
 
-		GhostBot.channels.get(fetchServer(message).static.config.inputVoteChannel).send(embed)
+		const voteChannel = GhostBot.channels.get(fetchServer(message).static.config.inputVoteChannel);
+		voteChannel.send({"embed": embed})
 		.then(newMsg => {
-			fetchServer(message).addVote(newMsg.id, message.author.id, newMsg.channel.id);
-			newMsg.react(GhostBot.guilds.get(this.static.info.id).emojis.find("name", "Yes"));
-			newMsg.react(GhostBot.guilds.get(this.static.info.id).emojis.find("name", "No"));
+			fetchServer(message).addVote(stripCommand(message), newMsg.id, message.author.id, newMsg.channel.id);
+			newMsg.react(GhostBot.guilds.get(fetchServer(message).static.info.id).emojis.find("name", "Yes"));
+			newMsg.react(GhostBot.guilds.get(fetchServer(message).static.info.id).emojis.find("name", "No"));
+		})
+		.catch(err => {
+			console.error("Empty input vote");
 		});
+		
 	}
 
 module.exports = generalCommands;

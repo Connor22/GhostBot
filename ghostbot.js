@@ -37,14 +37,13 @@
 		setTimeout(updateTrackersAndSave, 5000);
 	}
 
-/* BOOTUP SEQUENCE */
-	verifyStaticStorage(serverStore);
-	convertClasses(serverStore);
-	updateTrackersAndSave();
-
 /* ESSENTIAL CODE */
 	global.Discord = require("discord.js");
 	global.GhostBot = new Discord.Client();	
+
+/* BOOTUP SEQUENCE */
+	verifyStaticStorage(serverStore);
+	convertClasses(serverStore);
 
 /* MAIN FUNCTION */
 	GhostBot.on("message", message => {
@@ -136,6 +135,7 @@
 	}
 /* DEBUG */
 	GhostBot.on("ready", () => {
+		updateTrackersAndSave();
 		console.log("ready");
 	});
 

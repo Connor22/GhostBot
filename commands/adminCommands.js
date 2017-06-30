@@ -35,6 +35,9 @@
 		},
 		"clearrules" : function(message){
 			clearRules(message);
+		},
+		"givetokens" : function(message){
+			giveTokens(message);
 		}
 	};
 
@@ -75,6 +78,15 @@
 
 			fetchServer(message).static.rules.disclaimer = disclaimer;
 		},
+		"outputvotechannel" : function(message){
+			fetchServer(message).static.config.outputVoteChannel = message.channel.id;
+		},
+		"inputvotechannel" : function(message){
+			fetchServer(message).static.config.inputVoteChannel = message.channel.id;
+		},
+		"voteperiod" : function(message){
+			fetchServer(message).static.voteTracker.period = parseTime(splitCommand(message)[2], splitCommand(message)[3]);
+		}
 		// "channelrulesdisclaimer" : function(message){
 		// 	if (!fetchChannel(message).static.rules) fetchChannel(message).static.rules = {};
 
@@ -282,6 +294,13 @@
 		}
 
 		message.delete(3000);
+	}
+
+	function giveTokens(message){
+		if (message.mentions.users.array().length != 1) throw {name: "CommandError", message: "Only one user can have tokens added to their account."};
+		if (isNaN(splitCommand(message)[1])) throw {name: "CommandError", message: "First argument must be a valid number"};
+		console.log(splitCommand(message)[1]);
+		fetchServer(message).getUser(message.mentions.users.first().id).addTokens(splitCommand(message)[1]);
 	}
 
 /* HELPER FUNCTIONS */
