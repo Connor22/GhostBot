@@ -38,6 +38,9 @@
 		},
 		"givetokens" : function(message){
 			giveTokens(message);
+		},
+		"togglevoting" : function(message){
+			togglePostVoting(message);
 		}
 	};
 
@@ -301,6 +304,10 @@
 		if (isNaN(splitCommand(message)[1])) throw {name: "CommandError", message: "First argument must be a valid number"};
 		console.log(splitCommand(message)[1]);
 		fetchServer(message).getUser(message.mentions.users.first().id).addTokens(splitCommand(message)[1]);
+	}
+
+	function togglePostVoting(message){
+		fetchChannel(message).togglePostVoting();
 	}
 
 /* HELPER FUNCTIONS */

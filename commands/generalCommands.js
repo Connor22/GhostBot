@@ -199,13 +199,14 @@
 // Helper Functions
 	function sendVote(message){
 		const embed = new Discord.RichEmbed();
-		embed.setAuthor("Vote Proposal", "http://i.imgur.com/1MvehEj.png");
+		const voteCount = fetchServer(message).getVoteNumber();
+		embed.setAuthor(`Vote Proposal #${voteCount}`, "http://i.imgur.com/1MvehEj.png");
 		embed.setDescription(stripCommand(message));
 
 		const voteChannel = GhostBot.channels.get(fetchServer(message).static.config.inputVoteChannel);
 		voteChannel.send({"embed": embed})
 		.then(newMsg => {
-			fetchServer(message).addVote(stripCommand(message), newMsg.id, message.author.id, newMsg.channel.id);
+			fetchServer(message).addVote(stripCommand(message), newMsg.id, message.author.id, newMsg.channel.id, voteCount);
 			newMsg.react(GhostBot.guilds.get(fetchServer(message).static.info.id).emojis.find("name", "Yes"));
 			newMsg.react(GhostBot.guilds.get(fetchServer(message).static.info.id).emojis.find("name", "No"));
 		})

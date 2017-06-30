@@ -69,7 +69,7 @@
 			console.log("server has not been initiliazed");
 		}
 
-		if (channel.static.config.addVoting) {
+		if (channel.static.config.addPostVoting) {
 			message.react("⬆").then(setTimeout(function(){message.react("⬇").catch(console.log)},2000)).catch(console.log);
 		}
 
