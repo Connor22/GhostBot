@@ -3,9 +3,11 @@
 		"limits" : function(message){
 			informUserOfHisLimits(message);
 		},
+		/*
 		"hiddenchannels" : function(message) {
 			informUserOfHiddenChannels(message);
 		},
+		*/
 		"join" : function(message) {
 			joinRole(message);
 		},
@@ -36,6 +38,9 @@
 		"serverrules" : function(message){
 			sendGlobalRules(message);
 		},
+		"vote" : function(message){
+			addVote(message);
+		}
 	};
 
 /* FUNCTIONS */
@@ -174,6 +179,27 @@
 		message.author.sendMessage('Please enable embeds to view the server rules.', {embed: rulesEmbed});
 
 		message.delete(2000);
+	}
+
+	function addVote(message){
+		if (fetchServer(message.guild.id).getUser(message.author.id).takeToken()){
+			sendVote(message);
+		}
+	}
+
+// Helper Functions
+	function sendVote(message){
+		const embed = new Discord.RichEmbed();
+		embed.setAuthor("Vote");
+		embed.setDescription(stripCommand(message));
+		embed.setColor();
+
+		GhostBot.channels.get(fetchServer(message).static.config.inputVoteChannel).send(embed)
+		.then(newMsg => {
+			fetchServer(message).addVote(newMsg.id, message.author.id, newMsg.channel.id);
+			newMsg.react(GhostBot.guilds.get(this.static.info.id).emojis.find("name", "Yes"));
+			newMsg.react(GhostBot.guilds.get(this.static.info.id).emojis.find("name", "No"));
+		});
 	}
 
 module.exports = generalCommands;

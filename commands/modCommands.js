@@ -18,10 +18,10 @@
 		const server = fetchServer(message);
 		const userID = message.mentions.users.first().id;
 
-		message.guild.members.get(userID).addRole(server.static.roles.softban);
+		message.guild.members.get(userID).addRole(message.guild.roles.find("name", server.static.roles.softban));
 		message.channel.sendMessage("Banned <@" + userID + ">")//.then((message) => //message.delete(3000));
 
-		server.users[userID].static.isBanned = true;
+		server.getUser(userID).static.isBanned = true;
 
 		log("ban", message);
 		console.log("<@" + message.author.id + "> banned <@" + userID + ">");
@@ -33,10 +33,10 @@
 		const server = fetchServer(message);
 		const userID = message.mentions.users.first().id;
 
-		message.guild.members.get(userID).removeRole(server.static.roles.softban);
+		message.guild.members.get(userID).removeRole(message.guild.roles.find("name", server.static.roles.softban));
 		message.channel.sendMessage("Unbanned <@" + userID + ">")//.then((message) => //message.delete(3000));
 
-		server.users[userID].static.isBanned = false;
+		server.getUser(userID).static.isBanned = false;
 
 		log("unban", message);
 		console.log("<@" + message.author.id + "> unbanned <@" + userID + ">");

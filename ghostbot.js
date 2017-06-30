@@ -1,13 +1,10 @@
 "use strict";
 
-/* ESSENTIAL CODE */
-	global.Discord = require("discord.js");
-	global.GhostBot = new Discord.Client();
-
 /* JS FUNCTION IMPORTS */
-	const CLassFile = require("./lib/Classes.js");
+	const ClassesFile = require("./lib/Classes.js");
 	const HelpersFile = require("./lib/Helpers.js");	
 	const FunctionsFile = require("./lib/Functions.js");
+	const MaintenanceFile = require("./lib/Maintenance.js")
 
 	const setupBot = require("./lib/setup.js").setupBot;
 
@@ -18,8 +15,8 @@
 	const generalCommands = require("./commands/generalCommands.js"); 
 
 /* DICTIONARIES */
-	const serverStoreLocation = "./storage/serverStore.json";
-	const tempStoreLocation = "./storage/tempStore.json";
+	const serverStoreLocation = "/root/GhostBot/storage/serverStore.json";
+	const tempStoreLocation = "/root/GhostBot/storage/tempStore.json";
 	global.config = require("./storage/config.json");
 	global.serverStore = require(serverStoreLocation);
 
@@ -41,12 +38,13 @@
 	}
 
 /* BOOTUP SEQUENCE */
-	GhostBot.on("ready", () => {
-		console.log("ready");
-		convertClasses(serverStore);
-		updateTrackersAndSave();
-	});
-	
+	verifyStaticStorage(serverStore);
+	convertClasses(serverStore);
+	updateTrackersAndSave();
+
+/* ESSENTIAL CODE */
+	global.Discord = require("discord.js");
+	global.GhostBot = new Discord.Client();	
 
 /* MAIN FUNCTION */
 	GhostBot.on("message", message => {
@@ -137,6 +135,10 @@
 			}
 	}
 /* DEBUG */
+	GhostBot.on("ready", () => {
+		console.log("ready");
+	});
+
 	GhostBot.on('debug', message => {
 		if (message.toLowerCase().indexOf("heartbeat") === -1) console.log(message);
 	});
