@@ -36,11 +36,11 @@
 		"clearrules" : function(message){
 			clearRules(message);
 		},
-		"givetokens" : function(message){
-			giveTokens(message);
-		},
 		"togglevoting" : function(message){
 			togglePostVoting(message);
+		}, 
+		"makejoinable" : function(message){
+			makeChannelJoinable(message);
 		}
 	};
 
@@ -299,15 +299,12 @@
 		message.delete(3000);
 	}
 
-	function giveTokens(message){
-		if (message.mentions.users.array().length != 1) throw {name: "CommandError", message: "Only one user can have tokens added to their account."};
-		if (isNaN(splitCommand(message)[1])) throw {name: "CommandError", message: "First argument must be a valid number"};
-		console.log(splitCommand(message)[1]);
-		fetchServer(message).getUser(message.mentions.users.first().id).addTokens(splitCommand(message)[1]);
-	}
-
 	function togglePostVoting(message){
 		fetchChannel(message).togglePostVoting();
+	}
+
+	function makeChannelJoinable(message){
+		fetchServer(message).static.joinables.channels[message.channel.id] = message.channel.id;
 	}
 
 /* HELPER FUNCTIONS */

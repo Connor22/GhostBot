@@ -43,6 +43,9 @@
 		},
 		"tokens" : function(message){
 			informTokens(message);
+		},
+		"givetokens" : function(message){
+			giveTokens(message);
 		}
 	};
 
@@ -98,7 +101,7 @@
 		const roleName = splitCommand(message)[1];
 
 		if (splitCommand(message).length != 2) throw {name: "CommandError", message: "You can only join one role per command."};
-		if (!(fetchServer(message).roles.joinable[roleName])) throw {name: "OtherError", message: "That role either doesn't exist or is not joinable by users."};
+		if (!(fetchServer(message).static.joinables.roles[roleName])) throw {name: "OtherError", message: "That role either doesn't exist or is not joinable by users."};
 		if (!message.member) throw {name: "OtherError", message: "You need to go online to use this command"};
 
 		message.member.addRole(message.guild.roles.find("name", roleName));
@@ -108,7 +111,7 @@
 		const roleName = splitCommand(message)[1];
 
 		if (splitCommand(message).length != 2) throw {name: "CommandError", message: "You can only leave one role per command."};
-		if (!(fetchServer(message).roles.joinable[roleName])) throw {name: "OtherError", message: "That role either doesn't exist or cannot be left by users."};
+		if (!(fetchServer(message).static.joinables.roles[roleName])) throw {name: "OtherError", message: "That role either doesn't exist or cannot be left by users."};
 		if (!(message.member.roles.exists("name", roleName))) throw {name: "OtherError", message: "You don't appear to be in that role."};
 		if (!message.member) throw {name: "OtherError", message: "You need to go online to use this command"};
 
@@ -123,7 +126,12 @@
 		if (!(message.guild.channels.exists("name", channelName))) throw {name: "OtherError", message: `Cannot find channel \`${channelName}\``};
 		if (message.guild.channels.find("name", channelName) === message.guild.defaultChannel) throw {name: "OtherError", message: `\`${channelName}\` is the default channel of this server and cannot be hidden.`};
 		
-		message.guild.channels.find("name", channelName).overwritePermissions(message.author, {READ_MESSAGES: false});
+		if (message.guild.channels.find("name", channelName).permissionOverwrites.has(message.author.id)){
+			message.guild.channels.find("name", channelName).overwritePermissions(message.author, {READ_MESSAGES: false});
+		} else {
+			message.guild.channels.find("name", channelName).overwritePermissions(message.author, {READ_MESSAGES: false});
+		}
+
 		message.delete(5000);
 	}
 
@@ -133,9 +141,14 @@
 
 		if (splitCommand(message).length != 2) throw {name: "CommandError", message: "Channel names are only one word, seperated by dashes."};
 		if (!(message.guild.channels.exists("name", channelName))) throw {name: "OtherError", message: `Cannot find channel \`${channelName}\``};
-		if (!(message.guild.channels.find("name", channelName).permissionOverwrites.has(message.author.id)))  throw {name: "OtherError", message: `You're not hiding that channel`};
 		
-		message.guild.channels.find("name", channelName).permissionOverwrites.get(message.author.id).delete();
+		if (!(message.guild.channels.find("name", channelName).permissionOverwrites.has(message.author.id))){
+			if (!channelName in fetchServer(message).static.joinables.channels) throw {name: "OtherError", message: `That channel doesn't seem to be joinable`};
+			else message.guild.channels.find("name", channelName).overwritePermissions(message.author, {READ_MESSAGES: true});
+		} else {
+			message.guild.channels.find("name", channelName).overwritePermissions(message.author, {READ_MESSAGES: true});
+		}
+
 		message.delete(5000);
 	}
 
@@ -196,17 +209,31 @@
 		message.reply(`You have ${fetchServer(message).getUser(message.author.id).getTokens()} tokens`);
 	}
 
+	function giveTokens(message){
+		const amount = splitCommand(message)[1];
+
+		if (message.mentions.users.array().length != 1) throw {name: "CommandError", message: "Only one user can have tokens transferred to their account."};
+		if (isNaN(amount)) throw {name: "CommandError", message: "First argument must be a valid number."};
+		if (parseInt(amount) < 0) throw {name: "CommandError", message: "Amount must be above zero."};
+		if (parseInt(amount) > fetchServer(message).getUser(message.author.id).getTokens()) throw {name: "CommandError", message: "You don't have enough to do that!"};
+
+		fetchServer(message).getUser(message.mentions.users.first().id).addTokens(splitCommand(message)[1]);
+		fetchServer(message).getUser(message.author.id).addTokens(`-${splitCommand(message)[1]}`);
+	}
+
 // Helper Functions
 	function sendVote(message){
 		const embed = new Discord.RichEmbed();
 		const voteCount = fetchServer(message).getVoteNumber();
 		embed.setAuthor(`Vote Proposal #${voteCount}`, "http://i.imgur.com/1MvehEj.png");
 		embed.setDescription(stripCommand(message));
+		embed.setFooter(`Vote proposed by ${message.author.username} | ID: ${message.author.id}`);
+		embed.setTimestamp();
 
 		const voteChannel = GhostBot.channels.get(fetchServer(message).static.config.inputVoteChannel);
 		voteChannel.send({"embed": embed})
 		.then(newMsg => {
-			fetchServer(message).addVote(stripCommand(message), newMsg.id, message.author.id, newMsg.channel.id, voteCount);
+			fetchServer(message).addVote(stripCommand(message), newMsg.id, message.author.id, message.author.username, newMsg.channel.id, voteCount);
 			newMsg.react(GhostBot.guilds.get(fetchServer(message).static.info.id).emojis.find("name", "Yes"));
 			newMsg.react(GhostBot.guilds.get(fetchServer(message).static.info.id).emojis.find("name", "No"));
 		})

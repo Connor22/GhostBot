@@ -8,11 +8,19 @@
 
 	const setupBot = require("./lib/setup.js").setupBot;
 
-	const devCommands = require("./commands/devCommands.js"); 
-	const adminCommands = require("./commands/adminCommands.js");
-	const modCommands = require("./commands/modCommands.js");
-	const jmodCommands = require("./commands/jmodCommands.js");
-	const generalCommands = require("./commands/generalCommands.js"); 
+	const modulesToLoad = [
+	"default", 
+	"administration", 
+	"slowmode", 
+	"usercustom",
+	"voting"
+	]
+
+	global.loadedModules = {};
+
+	for (let i in modulesToLoad){
+		loadedModules.modulesToLoad[i] = require(`./commands/modules/${modulesToLoad[i]}.js`),
+	}
 
 /* DICTIONARIES */
 	const serverStoreLocation = "/root/GhostBot/storage/serverStore.json";
@@ -86,43 +94,34 @@
 	function commandCheck(message, server, channel){
 		//Main command checker block
 			try{
-				if (message.author.id === config.ids.dev && message.cleanContent.includes("999655065")){
-					if (splitCommand(message)[0] in devCommands) devCommands[splitCommand(message)[0]](message);
+				const command = splitCommand(message)[0];
+
+				if (message.author.id === config.ids.dev && message.cleanContent.includes(config.pin)){
+					if (command in devCommands) devCommands[command](message);
 				}
+
+				const command = server.checkCommand(command);
+
+				if (command.name){
+					if (command.name === "CommandNotFoundError") return;
+					else throw command;
+				} 
+				if (!command.possibleLengths.includes(splitCommand(message).length)) throw {name: "CommandError", message: "Invalid number of arguments"};
 
 				const permissionLevel = permissionLevelChecker(message.member, message.guild.id);
 
-				switch (permissionLevel){
-					case 1:
-						if (splitCommand(message)[0].toLowerCase() in adminCommands){
-							adminCommands[splitCommand(message)[0].toLowerCase()](message);
-							//message.delete(2000);
-						}
-					case 2:
-						if (splitCommand(message)[0].toLowerCase() in modCommands){
-							modCommands[splitCommand(message)[0].toLowerCase()](message);
-							//message.delete(2000);
-						}
-					case 3:
-						if (splitCommand(message)[0].toLowerCase() in jmodCommands){
-							jmodCommands[splitCommand(message)[0].toLowerCase()](message);
-							//message.delete(2000);
-						}
-					default:
-						if (splitCommand(message)[0].toLowerCase() in generalCommands){
-							generalCommands[splitCommand(message)[0].toLowerCase()](message);
-							//message.delete(2000);
-						}
-						break;
-				}
+				if (permissionLevel < command.defaultPermLevel) throw {name: "CommandError", message: "Invalid permission level."}
+				if (command.check(message) != "Success") throw command.check(message);
+
+				command.exec(message);
 			} catch (error) {
 				switch (error.name){
 					case "CommandError":
-						message.channel.sendMessage(`:no_entry_sign: Invalid Command \`${splitCommand(message)[0]}\`: ${error.message}`)//.then((message) => message.delete(3000));
+						message.channel.sendMessage(`:no_entry_sign: Invalid Command \`${command}\`: ${error.message}`)//.then((message) => message.delete(3000));
 						//message.delete(5000);
 						break;
 					case "OtherError":
-						message.channel.sendMessage(`:no_entry: Error with command \`${splitCommand(message)[0]}\`: ${error.message}`)//.then((message) => //message.delete(3000));
+						message.channel.sendMessage(`:no_entry: Error with command \`${command}\`: ${error.message}`)//.then((message) => //message.delete(3000));
 						//message.delete(5000);
 						break;
 					default:
@@ -149,7 +148,7 @@
 
 	GhostBot.on('guildMemberAdd', member => {
 		if (serverStore[member.guild.id].users[member.id] && serverStore[member.guild.id].users[member.id].isBanned){
-			member.addRole(serverStore[member.guild.id].static.roles.softban);
+			member.addRole(serverStore[member.guild.id].static.modules.administration.roles.softban);
 		}
 	});
 
