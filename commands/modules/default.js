@@ -9,6 +9,9 @@
 			exec: function(message){
 				message.reply("pong");
 			},
+			response: function(message){
+
+			},
 			defaultPermLevel: 1,
 			possibleLengths: [1]
 		},
@@ -20,6 +23,9 @@
 			},
 			exec: function(message){
 				message.channel.send("https://trello.com/b/rwz2I6KE/ghostbot");
+			},
+			response: function(message){
+
 			},
 			defaultPermLevel: 0,
 			possibleLengths: [1]
@@ -33,6 +39,9 @@
 			},
 			exec: function(message){
 				fetchServer(message).static.modules[splitCommand(message)[1]].enabled = true;
+			},
+			response: function(message){
+
 			},
 			defaultPermLevel: 3,
 			possibleLengths: [2]
@@ -58,6 +67,9 @@
 					fetchServer(message).setPerms(splitCommand(message)[1] === "whitelist", splitCommand(message)[2] + "s", splitCommand(message)[3], splitCommand(message)[4], splitCommand(message)[5]);
 				}
 			},
+			response: function(message){
+
+			},
 			defaultPermLevel: 3,
 			possibleLengths: [5, 6]
 		}, 
@@ -74,6 +86,9 @@
 			exec: function(message){
 				fetchServer(message).resetPerms(splitCommand(message)[1], splitCommand(message)[2]);
 			},
+			response: function(message){
+
+			},
 			defaultPermLevel: 3,
 			possibleLengths: [2, 3]
 		}
@@ -88,6 +103,9 @@
 				return "Success";
 			},
 			exec: function(message){
+			},
+			response: function(message){
+
 			},
 			defaultPermLevel: 0,
 			possibleLengths: []
@@ -201,16 +219,16 @@
 	    return string[0].toUpperCase() + string.slice(1);
 	}
 
-global.getTimeRemaining = getTimeRemaining;
-global.checkPermissions = checkPermissions;
-global.permissionLevelChecker = permissionLevelChecker;
-global.fetchServer = fetchServer;
-global.fetchChannel = fetchChannel;
-global.convertClasses = convertClasses;
-global.splitCommand = splitCommand;
-global.stripCommand = stripCommand;
-global.makeReadable = makeReadable;
-global.parseTime = parseTime;	
-global.capitalizeFirstLetter = capitalizeFirstLetter;
+global.GhostBot.getTimeRemaining = getTimeRemaining;
+global.GhostBot.checkPermissions = checkPermissions;
+global.GhostBot.permissionLevelChecker = permissionLevelChecker;
+global.GhostBot.fetchServer = fetchServer;
+global.GhostBot.fetchChannel = fetchChannel;
+global.GhostBot.convertClasses = convertClasses;
+global.GhostBot.splitCommand = splitCommand;
+global.GhostBot.stripCommand = stripCommand;
+global.GhostBot.makeReadable = makeReadable;
+global.GhostBot.parseTime = parseTime;	
+global.GhostBot.capitalizeFirstLetter = capitalizeFirstLetter;
 
 module.exports = defaultModule;

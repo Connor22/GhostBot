@@ -24,6 +24,9 @@
 			
 				message.delete(2000);
 			},
+			response: function(message){
+				return;
+			},
 			defaultPermLevel: 0,
 			possibleLengths: [1]
 		},
@@ -49,6 +52,9 @@
 				message.author.sendMessage('Please enable embeds to view the server rules.', {embed: rulesEmbed});
 
 				message.delete(2000);
+			},
+			response: function(message){
+				return;
 			},
 			defaultPermLevel: 0,
 			possibleLengths: [1]

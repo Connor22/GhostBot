@@ -12,7 +12,10 @@
 				muteUser(message.mentions.users.first().id, message.channel.id, message.guild.id, true);
 				log("mute", message);
 
-				message.channel.sendMessage(`Muted ${message.mentions.users.first().username}`);
+				message.channel.send(`Muted ${message.mentions.users.first().username}`);
+			},
+			response: function(message){
+
 			},
 			defaultPermLevel: 1,
 			possibleLengths: [2]
@@ -29,7 +32,10 @@
 				unmuteUser(message.mentions.users.first().id, message.channel.id, message.guild.id, true);
 				log("unmute", message);
 
-				message.channel.sendMessage(`Unmuted ${message.mentions.users.first().username}`);
+				message.channel.send(`Unmuted ${message.mentions.users.first().username}`);
+			},
+			response: function(message){
+
 			},
 			defaultPermLevel: 1,
 			possibleLengths: [2]
@@ -47,12 +53,15 @@
 				const userID = message.mentions.users.first().id;
 
 				message.guild.members.get(userID).addRole(message.guild.roles.find("name", server.static.modules.administration.roles.softban));
-				message.channel.sendMessage("Banned <@" + userID + ">")//.then((message) => //message.delete(3000));
+				message.channel.send("Banned <@" + userID + ">")//.then((message) => //message.delete(3000));
 
 				server.getUser(userID).static.modules.administration.isBanned = true;
 
 				log("ban", message);
 				console.log("<@" + message.author.id + "> banned <@" + userID + ">");
+			},
+			response: function(message){
+
 			},
 			defaultPermLevel: 2,
 			possibleLengths: [2]
@@ -70,12 +79,15 @@
 				const userID = message.mentions.users.first().id;
 
 				message.guild.members.get(userID).removeRole(message.guild.roles.find("name", server.static.modules.administration.roles.softban));
-				message.channel.sendMessage("Unbanned <@" + userID + ">")//.then((message) => //message.delete(3000));
+				message.channel.send("Unbanned <@" + userID + ">")//.then((message) => //message.delete(3000));
 
 				server.getUser(userID).static.modules.administration.isBanned = false;
 
 				log("unban", message);
 				console.log("<@" + message.author.id + "> unbanned <@" + userID + ">");
+			},
+			response: function(message){
+
 			},
 			defaultPermLevel: 2,
 			possibleLengths: [2]
@@ -89,7 +101,10 @@
 			},
 			exec: function(message){
 				message.channel.overwritePermissions(message.guild.roles.find("name", "@everyone"), {"SEND_MESSAGES": true});
-				message.channel.sendMessage("Opened channel");
+				message.channel.send("Opened channel");
+			},
+			response: function(message){
+
 			},
 			defaultPermLevel: 3,
 			possibleLengths: [1]
@@ -103,7 +118,10 @@
 			},
 			exec: function(message){
 				message.channel.overwritePermissions(message.guild.roles.find("name", "@everyone"), {"SEND_MESSAGES": false});
-				message.channel.sendMessage("Closed channel");
+				message.channel.send("Closed channel");
+			},
+			response: function(message){
+
 			},
 			defaultPermLevel: 3,
 			possibleLengths: [1]
@@ -209,8 +227,8 @@
 	}
 
 
-global.muteUser = muteUser;
-global.unmuteUser = unmuteUser;
-global.log = log;
+global.GhostBot.muteUser = muteUser;
+global.GhostBot.unmuteUser = unmuteUser;
+global.GhostBot.log = log;
 
 module.exports = administrationModule;

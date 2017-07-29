@@ -22,6 +22,9 @@
 			
 				message.delete(5000);
 			},
+			response: function(message){
+				message.reply(`You have hidden the ${splitCommand(message)[1]} channel`);
+			},
 			defaultPermLevel: 0,
 			possibleLengths: [2]
 		},
@@ -54,6 +57,9 @@
 
 				message.delete(5000);
 			},
+			response: function(message){
+				message.reply(`You have shown the ${splitCommand(message)[1]} channel`);
+			},
 			defaultPermLevel: 0,
 			possibleLengths: [2]
 		},
@@ -68,7 +74,10 @@
 				return "Success";
 			},
 			exec: function(message){
-				message.member.addRole(message.guild.roles.find("name", roleName));
+				message.member.addRole(message.guild.roles.find("name", splitCommand(message)[1]));
+			},
+			response: function(message){
+				message.reply(`You have joined the ${splitCommand(message)[1]} role`);
 			},
 			defaultPermLevel: 0,
 			possibleLengths: [2]
@@ -84,7 +93,10 @@
 				return "Success";
 			},
 			exec: function(message){
-				message.member.removeRole(message.guild.roles.find("name", roleName));
+				message.member.removeRole(message.guild.roles.find("name", splitCommand(message)[1]));
+			},
+			response: function(message){
+				message.reply(`You have left the ${splitCommand(message)[1]} role`);
 			},
 			defaultPermLevel: 0,
 			possibleLengths: [2]
@@ -97,6 +109,9 @@
 			},
 			exec: function(message){
 				fetchServer(message).static.modules.usercustom.joinables.channels[message.channel.id] = message.channel.id;
+			},
+			response: function(message){
+				message.channel.send("Channel is now joinable");
 			},
 			defaultPermLevel: 3,
 			possibleLengths: [1]
@@ -112,6 +127,9 @@
 				return "Success";
 			},
 			exec: function(message){
+			},
+			response: function(message){
+
 			},
 			defaultPermLevel: 0,
 			possibleLengths: []

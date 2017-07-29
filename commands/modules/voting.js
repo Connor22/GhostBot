@@ -30,6 +30,9 @@
 					console.error("Empty input vote");
 				});
 			},
+			response: function(message){
+				
+			},
 			defaultPermLevel: 0,
 			possibleLengths: [0]
 		},
@@ -49,6 +52,9 @@
 				fetchServer(message).getUser(message.mentions.users.first().id).addTokens(splitCommand(message)[1]);
 				fetchServer(message).getUser(message.author.id).addTokens(`-${splitCommand(message)[1]}`);
 			},
+			response: function(message){
+
+			},
 			defaultPermLevel: 0,
 			possibleLengths: [3]
 		},
@@ -63,6 +69,9 @@
 			exec: function(message){
 				fetchServer(message).getUser(message.mentions.users.first().id).addTokens(1);
 			},
+			response: function(message){
+
+			},
 			defaultPermLevel: 3,
 			possibleLengths: [2]
 		},
@@ -76,6 +85,9 @@
 				if (fetchServer(message).getUser(message.author.id).getTokens() === 1) message.reply(`You have ${fetchServer(message).getUser(message.author.id).getTokens()} vote proposal token remaining`);
 				else message.reply(`You have ${fetchServer(message).getUser(message.author.id).getTokens()} vote proposal tokens remaining`);
 			},
+			response: function(message){
+
+			},
 			defaultPermLevel: 0,
 			possibleLengths: [1]
 		},
@@ -87,6 +99,9 @@
 			},
 			exec: function(message){
 				fetchChannel(message).togglePostVoting();
+			},
+			response: function(message){
+				
 			},
 			defaultPermLevel: 3,
 			possibleLengths: [1]
@@ -102,6 +117,9 @@
 			exec: function(message){
 				fetchServer(message).static.modules.voting.voteTracker.tokenPeriod = parseTime(splitCommand(message)[1], splitCommand(message)[2]);
 			},
+			response: function(message){
+				
+			},
 			defaultPermLevel: 3,
 			possibleLengths: [3]
 		}
@@ -116,6 +134,9 @@
 				return "Success";
 			},
 			exec: function(message){
+			},
+			response: function(message){
+
 			},
 			defaultPermLevel: 0,
 			possibleLengths: []
