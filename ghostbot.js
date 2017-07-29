@@ -13,13 +13,14 @@
 	"administration", 
 	"slowmode", 
 	"usercustom",
-	"voting"
-	]
+	"voting",
+	"rules"
+	];
 
 	global.loadedModules = {};
 
 	for (let i in modulesToLoad){
-		loadedModules.modulesToLoad[i] = require(`./commands/modules/${modulesToLoad[i]}.js`),
+		loadedModules[modulesToLoad[i]] = require(`./commands/modules/${modulesToLoad[i]}.js`);
 	}
 
 /* DICTIONARIES */
@@ -92,42 +93,48 @@
 	});	
 
 	function commandCheck(message, server, channel){
+
+		const commandName = splitCommand(message)[0];
+
 		//Main command checker block
 			try{
-				const command = splitCommand(message)[0];
 
 				if (message.author.id === config.ids.dev && message.cleanContent.includes(config.pin)){
-					if (command in devCommands) devCommands[command](message);
+					if (commandName in devCommands) devCommands[commandName](message);
 				}
 
-				const command = server.checkCommand(command);
+				const command = server.checkCommand(commandName.toLowerCase(), message);
 
 				if (command.name){
-					if (command.name === "CommandNotFoundError") return;
-					else throw command;
+					if (command.name === "CommandNotFoundError"){
+						console.log(`${commandName} not a command`);
+						return;
+					} else throw command;
 				} 
-				if (!command.possibleLengths.includes(splitCommand(message).length)) throw {name: "CommandError", message: "Invalid number of arguments"};
+
+				if (!command.possibleLengths.includes(splitCommand(message).length) && !command.possibleLengths.includes(0)) throw {name: "CommandError", message: "Invalid number of arguments"};
 
 				const permissionLevel = permissionLevelChecker(message.member, message.guild.id);
-
 				if (permissionLevel < command.defaultPermLevel) throw {name: "CommandError", message: "Invalid permission level."}
+				
 				if (command.check(message) != "Success") throw command.check(message);
 
 				command.exec(message);
+
 			} catch (error) {
 				switch (error.name){
 					case "CommandError":
-						message.channel.sendMessage(`:no_entry_sign: Invalid Command \`${command}\`: ${error.message}`)//.then((message) => message.delete(3000));
-						//message.delete(5000);
+						message.channel.sendMessage(`:no_entry_sign: Invalid Command \`${commandName}\`: ${error.message}`).then((message) => message.delete(10000));
+						message.delete(15000);
 						break;
 					case "OtherError":
-						message.channel.sendMessage(`:no_entry: Error with command \`${command}\`: ${error.message}`)//.then((message) => //message.delete(3000));
-						//message.delete(5000);
+						message.channel.sendMessage(`:no_entry: Error with command \`${commandName}\`: ${error.message}`).then((message) => message.delete(10000));
+						message.delete(15000);
 						break;
 					default:
 						message.channel.sendMessage(`:boom: Critical Error - Check the logs`); 
 						console.log(error);
-						//message.delete(5000);
+						//message.delete(15000);
 						break;
 				}
 			}
@@ -147,7 +154,7 @@
 	});
 
 	GhostBot.on('guildMemberAdd', member => {
-		if (serverStore[member.guild.id].users[member.id] && serverStore[member.guild.id].users[member.id].isBanned){
+		if (serverStore[member.guild.id].users[member.id] && serverStore[member.guild.id].users[member.id].modules.administration.isBanned){
 			member.addRole(serverStore[member.guild.id].static.modules.administration.roles.softban);
 		}
 	});
