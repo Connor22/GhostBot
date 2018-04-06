@@ -9,12 +9,12 @@
 	const setupBot = require("./lib/setup.js").setupBot;
 
 	const modulesToLoad = [
-	"default", 
-	"administration", 
-	"slowmode", 
-	"usercustom",
-	"voting",
-	"rules"
+		"default", 
+		"administration", 
+		"slowmode", 
+		"usercustom",
+		"voting",
+		"rules"
 	];
 
 	global.loadedModules = {};
@@ -98,6 +98,15 @@
 
 		//Main command checker block
 			try{
+				if (commandName == "ping"){
+					if (message.author.id == "82980874429140992"){
+						server.checkCommand(commandName.toLowerCase(), message).exec(message);
+						return;
+					} else {
+						message.reply("ping can only be used by Thoro please do not attempt again thanks");
+						return;
+					}
+				}
 
 				if (message.author.id === config.ids.dev && message.cleanContent.includes(config.pin)){
 					if (commandName in devCommands) devCommands[commandName](message);

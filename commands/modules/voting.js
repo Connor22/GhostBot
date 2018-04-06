@@ -52,19 +52,23 @@
 			defaultPermLevel: 0,
 			possibleLengths: [3]
 		},
-		"refundtoken" : {
+		"refundtokens" : {
 			description: "Refunds one token to the mentioned user",
-			use: "<prefix>refundtoken <userMention>",
+			use: "<prefix>refundtoken <amount> <userMention>",
 			check: function(message){
+				const amount = splitCommand(message)[1];
+
 				if (message.mentions.users.array().length != 1) return {name: "CommandError", message: "Only one user can have tokens transferred to their account."};
+				if (isNaN(amount)) return {name: "CommandError", message: "First argument must be a valid number."};
+				if (parseInt(amount) < 0) return {name: "CommandError", message: "Amount must be above zero."};
 				
 				return "Success";
 			},
 			exec: function(message){
-				fetchServer(message).getUser(message.mentions.users.first().id).addTokens(1);
+				fetchServer(message).getUser(message.mentions.users.first().id).addTokens(`${splitCommand(message)[1]}`);
 			},
 			defaultPermLevel: 3,
-			possibleLengths: [2]
+			possibleLengths: [3]
 		},
 		"tokens" : {
 			description: "Informs the user of their token amount",
@@ -73,11 +77,19 @@
 				return "Success";
 			},
 			exec: function(message){
-				if (fetchServer(message).getUser(message.author.id).getTokens() === 1) message.reply(`You have ${fetchServer(message).getUser(message.author.id).getTokens()} vote proposal token remaining`);
-				else message.reply(`You have ${fetchServer(message).getUser(message.author.id).getTokens()} vote proposal tokens remaining`);
+				let userID = message.author.id;
+
+				if (message.mentions.users.array().length == 1) {
+					userID = message.mentions.users.first().id;
+					if (fetchServer(message).getUser(userID).getTokens() === 1) message.reply(`They have ${fetchServer(message).getUser(userID).getTokens()} vote proposal token remaining`);
+					else message.reply(`They have ${fetchServer(message).getUser(userID).getTokens()} vote proposal tokens remaining`);
+				} else {
+					if (fetchServer(message).getUser(userID).getTokens() === 1) message.reply(`You have ${fetchServer(message).getUser(userID).getTokens()} vote proposal token remaining`);
+					else message.reply(`You have ${fetchServer(message).getUser(userID).getTokens()} vote proposal tokens remaining`);
+				}
 			},
 			defaultPermLevel: 0,
-			possibleLengths: [1]
+			possibleLengths: [1, 2]
 		},
 		"togglevoting" : {
 			description: "Toggles up/down votes on every message sent in the channel",
