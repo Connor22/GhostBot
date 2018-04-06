@@ -92,6 +92,7 @@
 		if (!message.member) throw {name: "OtherError", message: "You need to go online to use this command"};
 
 		message.member.addRole(message.guild.roles.find("name", roleName));
+		message.delete(5000);
 	}
 
 	function leaveChannel(message) {
@@ -103,6 +104,7 @@
 		if (!message.member) throw {name: "OtherError", message: "You need to go online to use this command"};
 
 		message.member.removeRole(message.member.roles.find("name", roleName));
+		message.delete(5000);
 	}
 
 	function hideChannel(message) {
@@ -111,7 +113,6 @@
 
 		if (splitCommand(message).length != 2) throw {name: "CommandError", message: "Channel names are only one word, seperated by dashes."};
 		if (!(message.guild.channels.exists("name", channelName))) throw {name: "OtherError", message: `Cannot find channel \`${channelName}\``};
-		if (message.guild.channels.find("name", channelName) === message.guild.defaultChannel) throw {name: "OtherError", message: `\`${channelName}\` is the default channel of this server and cannot be hidden.`};
 		
 		message.guild.channels.find("name", channelName).overwritePermissions(message.author, {READ_MESSAGES: false});
 		message.delete(5000);

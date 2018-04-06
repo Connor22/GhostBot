@@ -18,8 +18,8 @@
 	const generalCommands = require("./commands/generalCommands.js"); 
 
 /* DICTIONARIES */
-	const serverStoreLocation = "./storage/serverStore.json";
-	const tempStoreLocation = "./storage/tempStore.json";
+	const serverStoreLocation = "/root/GhostBot-HN/storage/serverStore.json";
+	const tempStoreLocation = "/root/GhostBot-HN/storage/tempStore.json";
 	global.config = require("./storage/config.json");
 	global.serverStore = require(serverStoreLocation);
 
@@ -66,6 +66,14 @@
 		/* LIMIT CHECK */
 			if (channel) performLimitChecks(message);
 
+		// if (message.content === "=serverStore") console.log(serverStore);//debug
+		// if (message.content === "=debugChannel") console.log(fetchChannel(message));//debug
+		// if (message.content === "=debugUsers"){ console.log(selectTracker(message, "message"));
+			// for (const userID in selectTracker(message, "message").users){
+			// 	console.log(selectTracker(message, "message").users[userID]);
+			// }
+		// } //debug
+
 		if (!server && message.content === "=setup"){
 			setupBot(message);
 			console.log("setting up new server");
@@ -76,7 +84,7 @@
 			console.log("server has not been initiliazed");
 		}
 
-		if (message.channel.id === "234186792008417281") {
+		if (message.channel.id === "234186792008417281" || message.channel.id === "362098660173021184") {
 			message.react("⬆").then(setTimeout(function(){message.react("⬇").catch(console.log)},2000)).catch(console.log);
 		}
 
@@ -150,10 +158,12 @@
 	});
 
 	GhostBot.on('guildMemberAdd', member => {
+		if (!member || !member.guild) return;
 		if (serverStore[member.guild.id].bannedUsers && serverStore[member.guild.id].bannedUsers.indexOf(member.id) != -1){
-			member.addRole(serverStore[member.guild.id].softbanRole);
+			member.addRole("256713025061519370");
 		}
 	});
 
 /* LOGIN */
-	GhostBot.login(config.tokens.bot); //Live
+	GhostBot.login(config.bot.token); //Live
+	//GhostBot.login(config.bot.token); //Dev

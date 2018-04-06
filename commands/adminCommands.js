@@ -24,6 +24,9 @@
 		"stoplimit" : function(message){
 			stopLimit(message);
 		},
+		"setuplimit" : function(message){
+			setupLimit(message);
+		},
 		"invite" : function(message){
 			inviteToChannel_prestep(message);
 		},
@@ -132,6 +135,18 @@
 		tracker.activate();
 
 		message.channel.sendMessage(capitalizeFirstLetter(tracker.type) + " limiting enabled on this channel.");
+	}
+
+	function setupLimit(message){
+		const server = fetchServer(message);
+		const channelType = splitCommand(message)[1];
+
+		const tracker = selectTracker(message, splitCommand(message)[1]);
+
+		tracker.activate();
+
+		tracker.changeLimit(parseInt(splitCommand(message)[2]));
+		tracker.changePeriod(parseTime(splitCommand(message)[3], splitCommand(message)[4]));
 	}
 
 	function resetLimit(message){
