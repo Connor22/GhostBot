@@ -12,10 +12,8 @@
 			exec: function(message){
 				const tracker = selectTracker(message, splitCommand(message)[1]);
 
+				message.channel.sendMessage(capitalizeFirstLetter(tracker.type) + " limiting disabled on this channel.");				
 				fetchChannel(message).toggleTracker(tracker.type);
-			},
-			response: function(message){
-				message.channel.send(capitalizeFirstLetter(selectTracker(message, splitCommand(message)[1]).type) + " limiting disabled on this channel.");
 			},
 			defaultPermLevel: 3,
 			possibleLengths: [2]
@@ -33,16 +31,14 @@
 				const tracker = selectTracker(message, splitCommand(message)[1]);
 
 				fetchChannel(message).toggleTracker(tracker.type);
-			},
-			response: function(message){
-				message.channel.send(capitalizeFirstLetter(selectTracker(message, splitCommand(message)[1]).type) + " limiting enabled on this channel.");
+				message.channel.sendMessage(capitalizeFirstLetter(tracker.type) + " limiting enabled on this channel.");
 			},
 			defaultPermLevel: 3,
 			possibleLengths: [2]
 		},
 		"resetlimit" : {
 			description: "Resets the mentioned user's limit for the specific type of limiting",
-			use: "<prefix>resetlimit [image|message] <usermention>",
+			use: "",
 			check: function(message){
 				if (!["message", "image", "messages", "images"].includes(splitCommand(message)[1])) return {name: "CommandError", message: "Need to specify either image or message limiting"};
 				if (message.mentions.users.array().length < 1) return {name: "CommandError", message: "Need to mention one user"};
@@ -51,9 +47,6 @@
 			},
 			exec: function(message){
 				fetchChannel(message).resetTracker(message.mentions.users.array()[0].id, splitCommand(message)[1]);
-			},
-			response: function(message){
-				message.channel.send("User's limit has been reset");
 			},
 			defaultPermLevel: 2,
 			possibleLengths: [3]
@@ -70,10 +63,11 @@
 				return "Success";
 			},
 			exec: function(message){
+				const channel = fetchChannel(message);
+
 				if (splitCommand(message).length === 3) channel.changeTrackerLimit(splitCommand(message)[1], parseInt(splitCommand(message)[2]));
-			},
-			response: function(message){
-				message.channel.send(fetchChannel(message).getLimitMessage(splitCommand(message)[1]));
+				
+				message.channel.sendMessage(channel.getLimitMessage(splitCommand(message)[1]));
 			},
 			defaultPermLevel: 3,
 			possibleLengths: [2, 3]
@@ -91,10 +85,11 @@
 				return "Success";
 			},
 			exec: function(message){
-				if (splitCommand(message).length === 4)  fetchChannel(message).changeTrackerPeriod(splitCommand(message)[1], parseTime(splitCommand(message)[2], splitCommand(message)[3]));
-			},
-			response: function(message){
-				message.channel.send(fetchChannel(message).getPeriodMessage(splitCommand(message)[1]));
+				const channel = fetchChannel(message);
+
+				if (splitCommand(message).length === 4)  channel.changeTrackerPeriod(splitCommand(message)[1], parseTime(splitCommand(message)[2], splitCommand(message)[3]));
+				
+				message.channel.sendMessage(channel.getPeriodMessage(splitCommand(message)[1]));
 			},
 			defaultPermLevel: 3,
 			possibleLengths: [2, 4]
@@ -141,9 +136,6 @@
 
 				message.author.sendMessage(constructedMessage);
 			},
-			response: function(message){
-				return;
-			},
 			defaultPermLevel: 0,
 			possibleLengths: [1]
 		}
@@ -158,9 +150,6 @@
 				return "Success";
 			},
 			exec: function(message){
-			},
-			response: function(message){
-
 			},
 			defaultPermLevel: 0,
 			possibleLengths: []
@@ -235,8 +224,8 @@
 			&& message.mentions.length === 1);
 	}
 
-global.GhostBot.performLimitChecks = performLimitChecks;
-global.GhostBot.resetCheck = resetCheck;
-global.GhostBot.selectTracker = selectTracker;
+global.performLimitChecks = performLimitChecks;
+global.resetCheck = resetCheck;
+global.selectTracker = selectTracker;
 
 module.exports = slowmodeModule;

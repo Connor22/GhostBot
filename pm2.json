@@ -1,0 +1,7 @@
+{
+	"apps" : [{
+		"name" : "mongobot",
+		"script" : "ghostbot.js",
+		"max_restarts" : 2
+	}]
+}
