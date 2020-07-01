@@ -3,13 +3,13 @@
 		"stoplimit" : {
 			description: "Stops the limiting of the specified type of message in the current channel",
 			use: "<prefix>stoplimit [image|message]",
-			check: function(message){
+			check: async function(message){
 				if (!["message", "image", "messages", "images"].includes(splitCommand(message)[1])) return {name: "CommandError", message: "Need to specify either image or message limiting"};
 				if (!selectTracker(message, splitCommand(message)[1]).active) return {name: "CommandError", message: "Monitoring for " + splitCommand(message)[1] +" is already disabled"};
 
 				return "Success";
 			},
-			exec: function(message){
+			exec: async function(message){
 				const tracker = selectTracker(message, splitCommand(message)[1]);
 
 				message.channel.sendMessage(capitalizeFirstLetter(tracker.type) + " limiting disabled on this channel.");				
@@ -21,13 +21,13 @@
 		"startlimit" : {
 			description: "Starts the limiting of the specified type of message in the current channel",
 			use: "<prefix>startlimit [image|message]",
-			check: function(message){
+			check: async function(message){
 				if (!["message", "image", "messages", "images"].includes(splitCommand(message)[1])) return {name: "CommandError", message: "Need to specify either image or message limiting"};
 				if (selectTracker(message, splitCommand(message)[1]).active) return {name: "CommandError", message: "Monitoring for " + splitCommand(message)[1] +" is already enabled"};
 
 				return "Success";
 			},
-			exec: function(message){
+			exec: async function(message){
 				const tracker = selectTracker(message, splitCommand(message)[1]);
 
 				fetchChannel(message).toggleTracker(tracker.type);
@@ -39,13 +39,13 @@
 		"resetlimit" : {
 			description: "Resets the mentioned user's limit for the specific type of limiting",
 			use: "",
-			check: function(message){
+			check: async function(message){
 				if (!["message", "image", "messages", "images"].includes(splitCommand(message)[1])) return {name: "CommandError", message: "Need to specify either image or message limiting"};
 				if (message.mentions.users.array().length < 1) return {name: "CommandError", message: "Need to mention one user"};
 
 				return "Success";
 			},
-			exec: function(message){
+			exec: async function(message){
 				fetchChannel(message).resetTracker(message.mentions.users.array()[0].id, splitCommand(message)[1]);
 			},
 			defaultPermLevel: 2,
@@ -54,7 +54,7 @@
 		"limit" : {
 			description: "If new limit is specified, change the message limit of the specified type to that. Outputs current limit either way.",
 			use: "<prefix>limit [image|message] {<number>}",
-			check: function(message){
+			check: async function(message){
 				const length = splitCommand(message).length;
 
 				if (!["message", "image", "messages", "images"].includes(splitCommand(message)[1])) return {name: "CommandError", message: "Need to specify either image or message limiting"};
@@ -62,7 +62,7 @@
 
 				return "Success";
 			},
-			exec: function(message){
+			exec: async function(message){
 				const channel = fetchChannel(message);
 
 				if (splitCommand(message).length === 3) channel.changeTrackerLimit(splitCommand(message)[1], parseInt(splitCommand(message)[2]));
@@ -75,7 +75,7 @@
 		"period" : {
 			description: "If new time period is specified, change the tracking period of the specified type to that. Outputs current tracking period either way.",
 			use: "<prefix>period [image|message] {<number>} {[seconds|minutes|hours]}",
-			check: function(message){
+			check: async function(message){
 				const length = splitCommand(message).length;
 
 				if (!["second", "seconds", "minute", "minutes", "hour", "hours"].includes(splitCommand(message)[3])) return {name: "CommandError", message: "That is not a valid time unit."}
@@ -84,7 +84,7 @@
 
 				return "Success";
 			},
-			exec: function(message){
+			exec: async function(message){
 				const channel = fetchChannel(message);
 
 				if (splitCommand(message).length === 4)  channel.changeTrackerPeriod(splitCommand(message)[1], parseTime(splitCommand(message)[2], splitCommand(message)[3]));
@@ -98,12 +98,12 @@
 			description: "Informs the invoking user about their current limits in the channel they use this command",
 			use: "<prefix>limits",
 			aliases: ["showlimit", "showlimits"],
-			check: function(message){
+			check: async function(message){
 				if (splitCommand(message).length > 1) return {name: "CommandError", message: "Too many arguments. Did you mean to use `=limit?`"};
 
 				return "Success";
 			},
-			exec: function(message){
+			exec: async function(message){
 				let constructedMessage = "Your limits on `" + message.channel.guild.name + " - #" + message.channel.name + "`: \n";
 
 				if (selectTracker(message, "message").active){
@@ -146,10 +146,10 @@
 		"" : {
 			description: "",
 			use: "",
-			check: function(message){
+			check: async function(message){
 				return "Success";
 			},
-			exec: function(message){
+			exec: async function(message){
 			},
 			defaultPermLevel: 0,
 			possibleLengths: []
