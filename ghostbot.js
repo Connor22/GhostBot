@@ -1,8 +1,8 @@
 "use strict";
 /* ESSENTIAL CODE */
-	global.mongoose = require("mongoose");
-	global.Discord = require("discord.js");
-	global.GhostBot = new Discord.Client({restWsBridgeTimeout: 50000, restTimeOffset: 5000});	
+	const mongoose = require("mongoose");
+	const DiscordApp = require("discord.js");
+	const GhostBot = new DiscordApp.Client({restWsBridgeTimeout: 50000, restTimeOffset: 5000});	
 
 /* MONGOOSE */
 	const options = {
@@ -20,45 +20,56 @@
 	}
 	
 
-	const maindb = mongoose.createConnection('mongodb://localhost:27017/ghostbot', options);
-	const discorddb = mongoose.createConnection('mongodb://localhost:27017/discord', options);
-	const twitchdb = mongoose.createConnection('mongodb://localhost:27017/twitch', options);
+	const mainDBConnection = mongoose.createConnection('mongodb://mongo:27017/ghostbot', options);
+	const discordDBConnection = mongoose.createConnection('mongodb://mongo:27017/discord', options);
+	const twitchDBConnection = mongoose.createConnection('mongodb://mongo:27017/twitch', options);
 
 /* MODULES */
-	GhostBot.config = require("./config");
-	GhostBot.Discord = {};
-	GhostBot.Twitch = {};
+	const config = require("./config");
 
-	require("./lib/premodule.js");
+	const discordDB = {};
+	const twitchDB = {};
+	const mainDB = {};
+
+	const schemas = {};
+	const methods = {};
+
+	require("./lib/premodule.js").runPreModuleTasks(schemas, methods, mongoose);
 	
-	const modulesToLoad = GhostBot.config.modules;
-	GhostBot.modules = {lib: {}, commands: {}};
-	GhostBot.modules.commands.default = require(`./modules/commands/default.js`);
+	const modulesToLoad = config.modules;
+	modulesToLoad.push("default");
+	const commands = {};
+
+	require(`./modules/helpers/default.js`).setMethods(methods);
 
 	for (let i in modulesToLoad){
-		GhostBot.modules.lib[modulesToLoad[i]] = require(`./modules/lib/${modulesToLoad[i]}.js`);
-		GhostBot.modules.commands[modulesToLoad[i]] = require(`./modules/commands/${modulesToLoad[i]}.js`);
-		for (let command in GhostBot.modules.commands[modulesToLoad[i]]){
-			GhostBot.modules.commands[modulesToLoad[i]][command].module = modulesToLoad[i];
-			if (GhostBot.modules.commands[modulesToLoad[i]][command].aliases){
-				for (let n in GhostBot.modules.commands[modulesToLoad[i]][command].aliases){
-					GhostBot.modules.commands[modulesToLoad[i]][GhostBot.modules.commands[modulesToLoad[i]][command].aliases[n]] = GhostBot.modules.commands[modulesToLoad[i]][command];
-					GhostBot.modules.commands[modulesToLoad[i]][GhostBot.modules.commands[modulesToLoad[i]][command].aliases[n]].use = `<prefix>${GhostBot.modules.commands[modulesToLoad[i]][command].aliases[n]}`;
+		//require(`./modules/helpers/${modulesToLoad[i]}.js`).setMethods(methods);
+
+		require(`./modules/lib/${modulesToLoad[i]}.js`).activate(schemas, GhostBot, discordDB, DiscordApp, methods, commands, config, mongoose);
+		
+		commands[modulesToLoad[i]] = require(`./modules/commands/${modulesToLoad[i]}.js`);
+		
+		for (let command in commands[modulesToLoad[i]]){
+			commands[modulesToLoad[i]][command].module = modulesToLoad[i];
+			if (commands[modulesToLoad[i]][command].aliases){
+				for (let n in commands[modulesToLoad[i]][command].aliases){
+					commands[modulesToLoad[i]][commands[modulesToLoad[i]][command].aliases[n]] = commands[modulesToLoad[i]][command];
+					commands[modulesToLoad[i]][commands[modulesToLoad[i]][command].aliases[n]].use = `<prefix>${commands[modulesToLoad[i]][command].aliases[n]}`;
 				}
 			}
 		}
 	}
 
-	require("./lib/postmodule.js");
+	require("./lib/postmodule.js").runPostModuleTasks(schemas, discordDB, mongoose);
 
 /* MONGOOSE MODELS */
-	GhostBot.Discord.Guild = discorddb.model('Guild', GhostBot.discordServerSchema);
-	GhostBot.Discord.Channel = discorddb.model('Channel', GhostBot.discordChannelSchema);
+	discordDB.Guild = discordDBConnection.model('Guild', schemas.discordServerSchema);
+	discordDB.Channel = discordDBConnection.model('Channel', schemas.discordChannelSchema);
 
-	GhostBot.Community = maindb.model('Community', GhostBot.communitySchema);
-	GhostBot.User = maindb.model('User', GhostBot.userSchema);
+	mainDB.Community = mainDBConnection.model('Community', schemas.communitySchema);
+	mainDB.UserModel = mainDBConnection.model('User', schemas.userSchema);
 
-	GhostBot.Twitch.Channel = twitchdb.model('Channel', GhostBot.twitchChannelSchema);
+	twitchDB.Channel = twitchDBConnection.model('Channel', schemas.twitchChannelSchema);
 
 /* MAIN FUNCTION */
 	GhostBot.on("message", message => {
@@ -73,32 +84,44 @@
 	});
 
 	async function process(message){
+		// console.log("Processing message");
 		/* FETCH SERVER */
-			let server = await GhostBot.Discord.Guild.findOne({_id: message.guild.id});
+			let server = await discordDB.Guild.findOne({_id: message.guild.id});
 			// Handle first-time server access
 				if (!server){
+					// console.log("Constructing Server");
 					server = await constructServer(message);
+					server.save(function (err, server) {   
+				  		if (err) return console.log(err);    
+					});
 				}
 			// Check server initialization status
 				// Useful shortcut
-				message.split = GhostBot.splitCommand(message, server);
-				if (!server.isInitialized || !message.split[0] === "initialize") return;
+				message.split = methods.splitCommand(message, server);
+				// console.log(message.split);
+				if (!server.isInitialized && !message.split[0] === "initialize") return;
 			
 				
 
 		/* FETCH CHANNEL */
-			let channel = await GhostBot.Discord.Channel.findOne({_id: message.channel.id});
+			let channel = await discordDB.Channel.findOne({_id: message.channel.id});
 			// Handle first-time channel access
 				if (!channel){
-					channel = new GhostBot.Discord.Channel({_id: message.channel.id, name: message.channel.name, server: message.channel.parentID})
+					channel = new discordDB.Channel({_id: message.channel.id, name: message.channel.name, server: message.channel.parentID})
 					server.channels.addToSet(message.channel.id);
+					channel.save(function (err, channel) {   
+				  		if (err) return console.log(err);    
+					});
+					server.save(function (err, server) {   
+				  		if (err) return console.log(err);    
+					});
 				}
 
 		/* COMMAND PROCESSING */
 			//If message does not start with designated prefix, stop.
 				if (!message.content.startsWith(server.prefix)) return;
 			//Make sure user is cached before processing command
-				await message.guild.fetchMember(message.author);
+				await message.guild.members.fetch(message.author);
 			commandCheck(message, channel, server);		
 	}
 
@@ -118,7 +141,7 @@
 					}
 
 				/* Dev Command checking
-					if (message.author.id === GhostBot.config.ids.dev && message.cleanContent.includes(GhostBot.config.pin)){
+					if (message.author.id === config.ids.dev && message.cleanContent.includes(config.pin)){
 						if (commandName in devCommands) devCommands[commandName](message);
 					}
 				*/
@@ -206,9 +229,9 @@
 
 /* MISC */
 	async function performMaintenance(){
-		for (let guild in GhostBot.guilds.array()){
-			const guildObject = GhostBot.guilds.array()[guild];
-			GhostBot.Discord.Guild.findOne({_id: guildObject.id}).then((server) => {
+		for (let guild in GhostBot.guilds.cache.array()){
+			const guildObject = GhostBot.guilds.cache.array()[guild];
+			discordDB.Guild.findOne({_id: guildObject.id}).then((server) => {
 				server.performMaintenance(guildObject);
 				server.save();
 			});
@@ -222,11 +245,11 @@
 			modules: {}
 		};
 
-		for (let module in GhostBot.modules.lib){
+		for (let module in commands){
 			serverConstructor.modules[module] = {}
 		};
 
-		return new GhostBot.Discord.Guild(serverConstructor);
+		return new discordDB.Guild(serverConstructor);
 	}
 
 /* DEBUG */
@@ -255,27 +278,27 @@
 		if (!events.hasOwnProperty(event.t)) return;
 
 		const { d: data } = event;
-		const user = GhostBot.users.get(data.user_id);
-		const channel = GhostBot.channels.get(data.channel_id) || await user.createDM();
+		const user = GhostBot.users.cache.get(data.user_id);
+		const channel = GhostBot.channels.cache.get(data.channel_id) || await user.createDM();
 
 		// if the message is already in the cache, don't re-emit the event
-		if (channel.messages.has(data.message_id)) return;
+		if (channel.messages.cache.has(data.message_id)) return;
 
 		// if you're on the master/v12 branch, use `channel.messages.fetch()`
-		const message = await channel.fetchMessage(data.message_id);
+		const message = await channel.messages.fetch(data.message_id);
 
 		// custom emojis reactions are keyed in a `name:ID` format, while unicode emojis are keyed by names
 		// if you're on the master/v12 branch, custom emojis reactions are keyed by their ID
 		const emojiKey = (data.emoji.id) ? `${data.emoji.name}:${data.emoji.id}` : data.emoji.name;
-		const reaction = message.reactions.get(emojiKey);
+		const reaction = message.reactions.cache.get(emojiKey);
 
 		GhostBot.emit(events[event.t], reaction, user);
 	});
 
 
 /* LOGIN */
-	maindb.once('open', () => {
-		GhostBot.login(GhostBot.config.tokens.bot);
+	mainDBConnection.once('open', () => {
+		GhostBot.login(config.tokens.bot);
 		//setInterval(performMaintenance, 20000);
 		performMaintenance();
 	});

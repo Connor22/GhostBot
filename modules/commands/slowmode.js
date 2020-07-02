@@ -12,7 +12,7 @@
 			exec: async function(message){
 				const tracker = selectTracker(message, splitCommand(message)[1]);
 
-				message.channel.sendMessage(capitalizeFirstLetter(tracker.type) + " limiting disabled on this channel.");				
+				message.channel.send(capitalizeFirstLetter(tracker.type) + " limiting disabled on this channel.");				
 				fetchChannel(message).toggleTracker(tracker.type);
 			},
 			defaultPermLevel: 3,
@@ -31,7 +31,7 @@
 				const tracker = selectTracker(message, splitCommand(message)[1]);
 
 				fetchChannel(message).toggleTracker(tracker.type);
-				message.channel.sendMessage(capitalizeFirstLetter(tracker.type) + " limiting enabled on this channel.");
+				message.channel.send(capitalizeFirstLetter(tracker.type) + " limiting enabled on this channel.");
 			},
 			defaultPermLevel: 3,
 			possibleLengths: [2]
@@ -41,12 +41,12 @@
 			use: "",
 			check: async function(message){
 				if (!["message", "image", "messages", "images"].includes(splitCommand(message)[1])) return {name: "CommandError", message: "Need to specify either image or message limiting"};
-				if (message.mentions.users.array().length < 1) return {name: "CommandError", message: "Need to mention one user"};
+				if (message.mentions.users.cache.array().length < 1) return {name: "CommandError", message: "Need to mention one user"};
 
 				return "Success";
 			},
 			exec: async function(message){
-				fetchChannel(message).resetTracker(message.mentions.users.array()[0].id, splitCommand(message)[1]);
+				fetchChannel(message).resetTracker(message.mentions.users.cache.array()[0].id, splitCommand(message)[1]);
 			},
 			defaultPermLevel: 2,
 			possibleLengths: [3]
@@ -67,7 +67,7 @@
 
 				if (splitCommand(message).length === 3) channel.changeTrackerLimit(splitCommand(message)[1], parseInt(splitCommand(message)[2]));
 				
-				message.channel.sendMessage(channel.getLimitMessage(splitCommand(message)[1]));
+				message.channel.send(channel.getLimitMessage(splitCommand(message)[1]));
 			},
 			defaultPermLevel: 3,
 			possibleLengths: [2, 3]
@@ -89,7 +89,7 @@
 
 				if (splitCommand(message).length === 4)  channel.changeTrackerPeriod(splitCommand(message)[1], parseTime(splitCommand(message)[2], splitCommand(message)[3]));
 				
-				message.channel.sendMessage(channel.getPeriodMessage(splitCommand(message)[1]));
+				message.channel.send(channel.getPeriodMessage(splitCommand(message)[1]));
 			},
 			defaultPermLevel: 3,
 			possibleLengths: [2, 4]
@@ -134,7 +134,7 @@
 					constructedMessage += ("Images are not being limited on this channel```");
 				}
 
-				message.author.sendMessage(constructedMessage);
+				message.author.send(constructedMessage);
 			},
 			defaultPermLevel: 0,
 			possibleLengths: [1]
@@ -188,7 +188,7 @@
 			message.delete();
 			return;
 		}
-		//if (permissionLevelChecker(message.guild.fetchMember(message.author), message.guild.id)) /*|| message.guild.fetchMember(message.author).roles.exists('name', 'Shining E-Peen')) */ return;
+		//if (permissionLevelChecker(message.guild.fetchMember(message.author), message.guild.id)) /*|| message.guild.fetchMember(message.author).roles.some(role => role.name === 'Shining E-Peen')) */ return;
 		
 
 		if (message.attachments.size === 0){
@@ -214,7 +214,7 @@
 			if (fetchChannel(message).addSent(message.author.id, tracker)){
 				//muteUser(message.author.id, message.channel.id, message.guild.id, tracker.type);
 				message.delete();
-				message.author.sendMessage(fetchChannel(message).getWarnMessage(tracker, message.author.id));
+				message.author.send(fetchChannel(message).getWarnMessage(tracker, message.author.id));
 			}
 		}
 

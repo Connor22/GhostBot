@@ -6,7 +6,7 @@
 			check: async function(message, channel, server){
 				
 
-				if (!message.guild.channels.get(message.split[1]) || !message.guild.channels.get(message.split[2])) return {name: "CommandError", message: "One of the provided ids is not a valid channel ID."};
+				if (!message.guild.channels.cache.get(message.split[1]) || !message.guild.channels.cache.get(message.split[2])) return {name: "CommandError", message: "One of the provided ids is not a valid channel ID."};
 
 				return "Success";
 			},
@@ -30,7 +30,7 @@
 			check: async function(message, channel, server){
 				
 
-				//if (!message.guild.channels.get(message.split[1]) || !message.guild.channels.get(message.split[2])) return {name: "CommandError", message: "One of the provided ids is not a valid channel ID."};
+				//if (!message.guild.channels.cache.get(message.split[1]) || !message.guild.channels.cache.get(message.split[2])) return {name: "CommandError", message: "One of the provided ids is not a valid channel ID."};
 
 				return "Success";
 			},

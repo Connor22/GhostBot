@@ -5,19 +5,19 @@
 			use: "<prefix>hide [<channelName>|<channelMention>]",
 			check: async function(message, channel, server){
 				let channelName = message.split[1];
-				if (message.mentions.channels.size > 0) channelName = message.mentions.channels.first().name;
+				if (message.mentions.channels.cache.size > 0) channelName = message.mentions.channels.cache.first().name;
 				if (channelName[0] === "#") channelName = channelName.substr(1);
 
-				if (!(message.guild.channels.exists("name", channelName))) return {name: "OtherError", message: `Cannot find channel \`${channelName}\``};
+				if (!(message.guild.channels.cache.some(channel => channel.name === channelName))) return {name: "OtherError", message: `Cannot find channel \`${channelName}\``};
 
 				return "Success";
 			},
 			exec: async function(message, channel, server){
 				let channelName = message.split[1];
-				if (message.mentions.channels.size > 0) channelName = message.mentions.channels.first().name;
+				if (message.mentions.channels.cache.size > 0) channelName = message.mentions.channels.cache.first().name;
 				if (channelName[0] === "#") channelName = channelName.substr(1);
 
-				message.guild.channels.find(val => val.name === channelName).overwritePermissions(message.author, {READ_MESSAGES: false});
+				message.guild.channels.cache.find(val => val.name === channelName).overwritePermissions(message.author, {READ_MESSAGES: false});
 			
 				message.delete(5000);
 			},
@@ -32,21 +32,21 @@
 			use: "<prefix>show [<channelName>|<channelMention>]",
 			check: async function(message, channel, server){
 				let channelName = message.split[1];
-				if (message.mentions.channels.size > 0) channelName = message.mentions.channels.first().name;
+				if (message.mentions.channels.cache.size > 0) channelName = message.mentions.channels.cache.first().name;
 				if (channelName[0] === "#") channelName = channelName.substr(1);
 				
-				if (!(message.guild.channels.exists("name", channelName))) return {name: "OtherError", message: `Cannot find channel \`${channelName}\``};
-				if (!message.guild.channels.find(val => val.name === channelName).permissionOverwrites.has(message.author.id) 
-					&& !(server.isChannelShowable(message.guild.channels.find(val => val.name === channelName).id))) return {name: "OtherError", message: `That channel doesn't seem to be joinable`};
+				if (!(message.guild.channels.cache.some(channel => channel.name === channelName))) return {name: "OtherError", message: `Cannot find channel \`${channelName}\``};
+				if (!message.guild.channels.cache.find(val => val.name === channelName).permissionOverwrites.has(message.author.id) 
+					&& !(server.isChannelShowable(message.guild.channels.cache.find(val => val.name === channelName).id))) return {name: "OtherError", message: `That channel doesn't seem to be joinable`};
 
 				return "Success";
 			},
 			exec: async function(message, channel, server){
 				let channelName = message.split[1];
-				if (message.mentions.channels.size > 0) channelName = message.mentions.channels.first().name;
+				if (message.mentions.channels.cache.size > 0) channelName = message.mentions.channels.cache.first().name;
 				if (channelName[0] === "#") channelName = channelName.substr(1);
 
-				const showChannel = message.guild.channels.find(val => val.name === channelName)
+				const showChannel = message.guild.channels.cache.find(val => val.name === channelName)
 
 				if (!(showChannel.permissionOverwrites.has(message.author.id))){
 					showChannel.overwritePermissions(message.author, {READ_MESSAGES: true});
@@ -79,7 +79,7 @@
 			},
 			exec: async function(message, channel, server){
 				const role = message.guild.roles.find(role => role.name  === message.split[1]);
-				if (role) message.member.addRole(role.id);
+				if (role) message.member.roles.add(role.id);
 				else {
 					const subRoles = server.modules.usercustom.superRoles[message.split[1].toLowerCase()].subRoles;
 
@@ -88,8 +88,8 @@
 						var rID = roleID;
 						setTimeout(function(rID){
 							var id = rID;
-							message.member.addRole(subRoles[id]).catch((err) => {
-								setTimeout(function(id, subRoles){message.member.addRole(subRoles[id]).catch(console.log)}, 
+							message.member.roles.add(subRoles[id]).catch((err) => {
+								setTimeout(function(id, subRoles){message.member.roles.add(subRoles[id]).catch(console.log)}, 
 									(Math.random() * 1000 + Math.random() * 1000 + 500), id, subRoles);;
 							});
 							
@@ -123,7 +123,7 @@
 				const role = message.guild.roles.find(role => role.name  === message.split[1]);
 				if (role && message.member.roles.has(role.id)){
 					console.log(`Leaving role`);
-					message.member.removeRole(role.id);
+					message.member.roles.remove(role.id);
 				} else {
 					// superRoleProcess(message, channel, server, role);
 				}
@@ -142,7 +142,7 @@
 				return "Success";
 			},
 			exec: async function(message, channel, server){
-				server.modules.usercustom.joinables.channels.addToSet(message.channel.id);
+				server.modules.usercustom.joinables.channels.cache.addToSet(message.channel.id);
 			},
 			response: async function(message, channel, server){
 				return;
@@ -280,11 +280,11 @@
 // 			const superRole = server.modules.usercustom.superRoles[roleID];
 // 			for (let index in superRoles.subRoles){
 // 				if (superRoles.subRoles[index] != role.id){
-// 					message.member.addRole(message.guild.roles.get(role.id));
+// 					message.member.roles.add(message.guild.roles.get(role.id));
 // 				}
 // 			}
 
-// 			message.member.removeRole(message.guild.roles.get(roleID));
+// 			message.member.roles.remove(message.guild.roles.get(roleID));
 // 		}
 // 	}
 // }

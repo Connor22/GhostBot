@@ -5,7 +5,7 @@
 			use: "<prefix>archive <messageID>",
 			check: async function(message, channel, server){
 				
-				if (splitCommand.length === 2 && !message.channel.fetchMessage(message.split[1])) return {name: "CommandError", message: "Argument must be a valid message ID."};
+				if (splitCommand.length === 2 && !message.channel.messages.fetch(message.split[1])) return {name: "CommandError", message: "Argument must be a valid message ID."};
 				return "Success";
 			},
 			exec: async function(message, channel, server){

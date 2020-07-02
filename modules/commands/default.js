@@ -138,13 +138,13 @@
 			},
 			exec: async function(message, channel, server){
 				const serverObj = server.toObject();
-				await GhostBot.Discord.Guild.findByIdAndRemove(message.guild.id);
+				await discordObject.Guild.findByIdAndRemove(message.guild.id);
 				
 				for (let module in GhostBot.modules.lib){
 					if (!serverObj.modules[module]) serverObj.modules[module] = {};
 				};
 
-				await GhostBot.Discord.Guild.create(serverObj);
+				await discordObject.Guild.create(serverObj);
 
 				return;
 			},
@@ -197,62 +197,5 @@
 		}
 
 	*/
-
-/* FUNCTIONS */
-	function splitCommand(message, server){
-		return message.content.substr(server.prefix.length).split(" ");
-	}
-
-	function stripCommand(message, server) {
-		return message.content.substr(server.prefix.length + splitCommand(message, server)[0].length + 1);
-	}
-
-	function getTimeRemaining(tracker, id){
-		if (!tracker || !tracker.container) throw {name: "OtherError", message: "Tracker misinitialized"};
-		let period = tracker[tracker.container][id].period;
-		if (!tracker[tracker.container][id].period) period = tracker.period;
-		
-		return period - (Date.now() - tracker[tracker.container][id].timeStamp);
-	}
-
-	function parseTime(number, format) {
-		switch (format) {
-		    case "minutes":
-		    case "minute":
-		        return number * 60000;
-		        break;
-		    case "seconds":
-		    case "second":
-		        return number * 1000;
-		        break;
-		    case "hours":
-		    case "hour":
-		        return number * 3600000;
-		        break;
-		    default:
-		    	throw "invalid input";
-		}
-	}
-
-	function makeReadable(milliseconds){
-		if (milliseconds > 3600000){
-			return (Math.floor(milliseconds/3600000) + " hours");
-		} else if (milliseconds > 60000){
-			return (Math.floor(milliseconds/60000) + " minutes");
-		} else {
-			return (Math.floor(milliseconds/1000) + " seconds");
-		} 
-	}
-
-	function capitalizeFirstLetter(string) {
-	    return string[0].toUpperCase() + string.slice(1);
-	}
-
-global.GhostBot.getTimeRemaining = getTimeRemaining;
-global.GhostBot.splitCommand = splitCommand;
-global.GhostBot.stripCommand = stripCommand;
-global.GhostBot.makeReadable = makeReadable;
-global.GhostBot.parseTime = parseTime;	
-global.GhostBot.capitalizeFirstLetter = capitalizeFirstLetter;
 
 module.exports = defaultModule;

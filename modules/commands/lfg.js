@@ -13,9 +13,9 @@
 				const game = server.modules.lfg.getGame(message.split[1]);
 				const gameRole = message.guild.roles.get(game.role);
 
-				message.member.addRole(game.role).catch(console.log).then();
+				message.member.roles.add(game.role).catch(console.log).then();
 
-				gameRole.setMentionable(true).then(message.guild.channels.get(game.channel).send(`<@&${game.role}>: <@${message.author.id}> is looking to play!`).then(gameRole.setMentionable(false)));
+				gameRole.setMentionable(true).then(message.guild.channels.cache.get(game.channel).send(`<@&${game.role}>: <@${message.author.id}> is looking to play!`).then(gameRole.setMentionable(false)));
 
 				return;
 			},
@@ -33,12 +33,12 @@
 			},
 			exec: async function(message, channel, server){
 				for (let game in server.modules.lfg.games){
-					message.member.removeRole(message.guild.roles.get(server.modules.lfg.getGame(game).role));
+					message.member.roles.remove(message.guild.roles.get(server.modules.lfg.getGame(game).role));
 				}
 				return;
 			},
 			response: async function(message, channel, server){
-				return "Successfully left all lfg channels.";
+				return "Successfully left all lfg channels.cache.";
 			},
 			defaultPermLevel: 0,
 			possibleLengths: [1]
@@ -48,7 +48,7 @@
 			use: "<prefix>addlfggame <game> <channelID> <roleID>",
 			check: async function(message, channel, server){
 				
-				if (!message.guild.channels.get(message.split[2])) return {name: "CommandError", message: "Second argument must be a valid channel ID."};
+				if (!message.guild.channels.cache.get(message.split[2])) return {name: "CommandError", message: "Second argument must be a valid channel ID."};
 				if (!message.guild.roles.get(message.split[3])) return {name: "CommandError", message: "Third argument must be a valid role ID."};
 
 				return "Success";

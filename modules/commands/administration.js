@@ -4,16 +4,16 @@
 			description: "Mute the mentioned user from the current channel, preventing them from sending messages",
 			use: "<prefix>mute <userMention>",
 			check: async function(message, channel, server){
-				if (message.mentions.users.array().length != 1) return {name: "CommandError", message: "Only one user can be muted per command"};
+				if (message.mentions.users.cache.array().length != 1) return {name: "CommandError", message: "Only one user can be muted per command"};
 				
 				return "Success";
 			},
 			exec: async function(message, channel, server){
-				muteUser(message.mentions.users.first().id, message.channel.id, message.guild.id, true);
+				muteUser(message.mentions.users.cache.first().id, message.channel.id, message.guild.id, true);
 			},
 			response: async function(message, channel, server){
 				//log("mute", message);
-				return `Muted ${message.mentions.users.first().username}`;
+				return `Muted ${message.mentions.users.cache.first().username}`;
 			},
 			defaultPermLevel: 1,
 			possibleLengths: [2]
@@ -22,16 +22,16 @@
 			description: "Unmute the mentioned user from the current channel",
 			use: "<prefix>unmute <userMention>",
 			check: async function(message, channel, server){
-				if (message.mentions.users.array().length != 1) return {name: "CommandError", message: "Only one user can be muted per command"};
+				if (message.mentions.users.cache.array().length != 1) return {name: "CommandError", message: "Only one user can be muted per command"};
 				
 				return "Success";
 			},
 			exec: async function(message, channel, server){
-				unmuteUser(message.mentions.users.first().id, message.channel.id, message.guild.id, true);
+				unmuteUser(message.mentions.users.cache.first().id, message.channel.id, message.guild.id, true);
 			},
 			response: async function(message, channel, server){
 				//log("unmute", message);
-				return `Unmuted ${message.mentions.users.first().username}`;
+				return `Unmuted ${message.mentions.users.cache.first().username}`;
 			},
 			defaultPermLevel: 1,
 			possibleLengths: [2]
@@ -40,21 +40,21 @@
 			description: "Softbans the user, preventing them from chatting in any non-appeal channel.",
 			use: "<prefix>ban <userMention>",
 			check: async function(message, channel, server){
-				if (message.mentions.users.array().length != 1) return {name: "CommandError", message: "Only one user can be unbanned per command"};
-				if (server.isUserBanned(message.mentions.users.first().id)) return {name: "CommandError", message: "That user is already banned"};
+				if (message.mentions.users.cache.array().length != 1) return {name: "CommandError", message: "Only one user can be unbanned per command"};
+				if (server.isUserBanned(message.mentions.users.cache.first().id)) return {name: "CommandError", message: "That user is already banned"};
 				return "Success";
 			},
 			exec: async function(message, channel, server){
-				const user = await message.guild.members.get(message.mentions.users.first().id)
-				user.addRole(server.modules.administration.roles.softban).catch(console.log);
+				const user = await message.guild.members.get(message.mentions.users.cache.first().id)
+				user.roles.add(server.modules.administration.roles.softban).catch(console.log);
 
-				server.ban(message.mentions.users.first().id);
+				server.ban(message.mentions.users.cache.first().id);
 			},
 			response: async function(message, channel, server){
 				//log("ban", message);
-				console.log("<@" + message.author.id + "> banned <@" + message.mentions.users.first().id + ">");
+				console.log("<@" + message.author.id + "> banned <@" + message.mentions.users.cache.first().id + ">");
 
-				return (`Banned <@${message.mentions.users.first().id}>`);
+				return (`Banned <@${message.mentions.users.cache.first().id}>`);
 			},
 			defaultPermLevel: 2,
 			possibleLengths: [2]
@@ -63,21 +63,21 @@
 			description: "Removes the softban from the mentioned user",
 			use: "<prefix>ban <userMention>",
 			check: async function(message, channel, server){
-				if (message.mentions.users.array().length != 1) return {name: "CommandError", message: "Only one user can be unbanned per command"};
-				if (!server.isUserBanned(message.mentions.users.first().id)) return {name: "CommandError", message: "That user is not banned"};
+				if (message.mentions.users.cache.array().length != 1) return {name: "CommandError", message: "Only one user can be unbanned per command"};
+				if (!server.isUserBanned(message.mentions.users.cache.first().id)) return {name: "CommandError", message: "That user is not banned"};
 				return "Success";
 			},
 			exec: async function(message, channel, server){
-				const user = await message.guild.members.get(message.mentions.users.first().id)
-				user.removeRole(server.modules.administration.roles.softban).catch(console.log);
+				const user = await message.guild.members.get(message.mentions.users.cache.first().id)
+				user.roles.remove(server.modules.administration.roles.softban).catch(console.log);
 
-				server.unban(message.mentions.users.first().id);
+				server.unban(message.mentions.users.cache.first().id);
 			},
 			response: async function(message, channel, server){
 				//log("unban", message);
-				console.log("<@" + message.author.id + "> unbanned <@" + message.mentions.users.first().id + ">");
+				console.log("<@" + message.author.id + "> unbanned <@" + message.mentions.users.cache.first().id + ">");
 
-				return (`Unbanned <@${message.mentions.users.first().id}>`);
+				return (`Unbanned <@${message.mentions.users.cache.first().id}>`);
 			},
 			defaultPermLevel: 2,
 			possibleLengths: [2]
@@ -211,7 +211,7 @@
 		embd.embed.author = {}
 		embd.embed.timestamp = new Date();
 
-		let mentionID = message.mentions.users.first().id;
+		let mentionID = message.mentions.users.cache.first().id;
 
 		switch (type){
 			case "mute":
@@ -244,26 +244,26 @@
 	}
 
 	async function muteUser(userID, channelID, serverID, command) {
-		const server = GhostBot.guilds.get(serverID);
+		const server = botObject.guilds.cache.get(serverID);
 		const user = server.members.get(userID);
 		const channel = server.channels.get(channelID);
 
 		let roleName = `Mute - ${channel.name}`;
 		if (!command) roleName = `AutoMute - ${channel.name}`;
 
-		if (server.roles.exists('name', roleName)){
-			user.addRole(server.roles.find('name', roleName));
+		if (server.roles.some(role => role.name === roleName)){
+			user.roles.add(server.roles.find(role => role.name === roleName));
 		} else {
 			server.createRole({name: roleName, permissions: []})
 			.then((role) => {
 				channel.overwritePermissions(role, {SEND_MESSAGES: false, ADD_REACTIONS: false});
-				user.addRole(role);
+				user.roles.add(role);
 			});
 		}
 	}
 
 	async function unmuteUser(userID, channelID, serverID, command){
-		const server = GhostBot.guilds.get(serverID);
+		const server = botObject.guilds.cache.get(serverID);
 		const user = server.members.get(userID);
 		const channel = server.channels.get(channelID);
 
@@ -271,11 +271,11 @@
 		if (!command) roleName = `AutoMute - ${channel.name}`;
 
 		if (!(user && channel && server)) console.log(`user: ${user}\nserver: ${server}\nchannel: ${channel}\n`)
-		if (!server.roles.find('name', roleName)) {
+		if (!server.roles.find(role => role.name === roleName)) {
 			return;
 		}
 
-		user.removeRole(server.roles.find('name', roleName));
+		user.roles.remove(server.roles.find(role => role.name === roleName));
 	}
 
 module.exports = administrationModule;
