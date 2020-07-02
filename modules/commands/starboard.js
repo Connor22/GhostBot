@@ -6,7 +6,7 @@
 			check: async function(message, channel, server){
 				
 
-				if (!message.guild.channels.cache.get(message.split[1]) || !message.guild.channels.cache.get(message.split[2])) return {name: "CommandError", message: "One of the provided ids is not a valid channel ID."};
+				if (!message.cache.guild.channels.some(channel => channel.id === message.split[1]) || !message.cache.guild.channels.some(channel => channel.id === message.split[2])) return {name: "CommandError", message: "One of the provided ids is not a valid channel ID."};
 
 				return "Success";
 			},
@@ -28,10 +28,6 @@
 			description: "Defines the star threshold for the server.",
 			use: "=starthreshold <number>",
 			check: async function(message, channel, server){
-				
-
-				//if (!message.guild.channels.cache.get(message.split[1]) || !message.guild.channels.cache.get(message.split[2])) return {name: "CommandError", message: "One of the provided ids is not a valid channel ID."};
-
 				return "Success";
 			},
 			exec: async function(message, channel, server){
@@ -52,8 +48,6 @@
 			description: "Tells the bot to star all media in channels that don't start with x-",
 			use: "=stareverything",
 			check: async function(message, channel, server){
-				
-
 				return "Success";
 			},
 			exec: async function(message, channel, server){

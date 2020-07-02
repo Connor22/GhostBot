@@ -1,7 +1,7 @@
 "use strict";
 /* ESSENTIAL CODE */
 	const mongoose = require("mongoose");
-	const DiscordApp = require("discord.js");
+	const DiscordApp = require("discord.js-light");
 	const GhostBot = new DiscordApp.Client({restWsBridgeTimeout: 50000, restTimeOffset: 5000});	
 
 /* MONGOOSE */
@@ -76,17 +76,18 @@
 		/* CHECKS */
 			if (!message.guild) return; //DMs shouldn't be handled
 			if (message.author.bot) return; //Don't respond to bots
-			try{
-				process(message);
-			} catch (err) {
-				console.log(err);
-			}
+			process(message).catch(console.log);
 	});
 
-	async function process(message){
+	async function process(message){		
+		// Cache message elements
+			message.cache = {};
+			message.cache.channel = await message.channel.fetch();
+			message.cache.guild = await message.guild.fetch();
+
 		// console.log("Processing message");
 		/* FETCH SERVER */
-			let server = await discordDB.Guild.findOne({_id: message.guild.id});
+			let server = await discordDB.Guild.findOne({_id: message.cache.guild.id});
 			// Handle first-time server access
 				if (!server){
 					// console.log("Constructing Server");
@@ -104,11 +105,11 @@
 				
 
 		/* FETCH CHANNEL */
-			let channel = await discordDB.Channel.findOne({_id: message.channel.id});
+			let channel = await discordDB.Channel.findOne({_id: message.cache.channel.id});
 			// Handle first-time channel access
 				if (!channel){
-					channel = new discordDB.Channel({_id: message.channel.id, name: message.channel.name, server: message.channel.parentID})
-					server.channels.addToSet(message.channel.id);
+					channel = new discordDB.Channel({_id: message.cache.channel.id, name: message.cache.channel.name, server: message.cache.guild.id})
+					server.channels.addToSet(message.cache.channel.id);
 					channel.save(function (err, channel) {   
 				  		if (err) return console.log(err);    
 					});
@@ -120,8 +121,6 @@
 		/* COMMAND PROCESSING */
 			//If message does not start with designated prefix, stop.
 				if (!message.content.startsWith(server.prefix)) return;
-			//Make sure user is cached before processing command
-				await message.guild.members.fetch(message.author);
 			commandCheck(message, channel, server);		
 	}
 
@@ -133,7 +132,7 @@
 				// Misc Checking
 					if (commandName == "ping"){
 						if (message.author.id == "82980874429140992"){
-							message.channel.send(server.checkCommand(commandName.toLowerCase(), message).response(message, channel, server)).catch(console.log);
+							message.cache.channel.send(server.checkCommand(commandName.toLowerCase(), message).response(message, channel, server)).catch(console.log);
 						} else {
 							message.reply("ping can only be used by Thoro please do not attempt again thanks");
 						}
@@ -163,15 +162,15 @@
 			} catch (error) {
 				switch (error.name){
 					case "CommandError":
-						message.channel.send(`:no_entry_sign: Invalid Command \`${commandName}\`: ${error.message}`).then((message) => message.delete(10000)).catch(console.log);
+						message.cache.channel.send(`:no_entry_sign: Invalid Command \`${commandName}\`: ${error.message}`).then((message) => message.delete(10000)).catch(console.log);
 						message.delete(15000);
 						break;
 					case "OtherError":
-						message.channel.send(`:no_entry: Error with command \`${commandName}\`: ${error.message}`).then((message) => message.delete(10000)).catch(console.log);
+						message.cache.channel.send(`:no_entry: Error with command \`${commandName}\`: ${error.message}`).then((message) => message.delete(10000)).catch(console.log);
 						message.delete(15000);
 						break;
 					default:
-						message.channel.send(`:boom: Critical Error - Check the logs`).catch(console.log); 
+						message.cache.channel.send(`:boom: Critical Error - Check the logs`).catch(console.log); 
 						console.log(error);
 						//message.delete(15000);
 						break;
@@ -196,7 +195,7 @@
 		
 				const response = await command.response(message, channel, server);
 
-				if (response) message.channel.send(response).catch(console.log);
+				if (response) message.cache.channel.send(response).catch(console.log);
 
 				server.markModified(`modules.${command.module}`);
 				// console.log(`About to save server`);
@@ -211,15 +210,15 @@
 			catch (error) {
 				switch (error.name){
 					case "CommandError":
-						message.channel.send(`:no_entry_sign: Invalid Command \`${message.split[0]}\`: ${error.message}`).then((message) => message.delete(10000)).catch(console.log);
+						message.cache.channel.send(`:no_entry_sign: Invalid Command \`${message.split[0]}\`: ${error.message}`).then((message) => message.delete(10000)).catch(console.log);
 						message.delete(15000);
 						break;
 					case "OtherError":
-						message.channel.send(`:no_entry: Error with command \`${message.split[0]}\`: ${error.message}`).then((message) => message.delete(10000)).catch(console.log);
+						message.cache.channel.send(`:no_entry: Error with command \`${message.split[0]}\`: ${error.message}`).then((message) => message.delete(10000)).catch(console.log);
 						message.delete(15000);
 						break;
 					default:
-						message.channel.send(`:boom: Critical Error - Check the logs`).catch(console.log); 
+						message.cache.channel.send(`:boom: Critical Error - Check the logs`).catch(console.log); 
 						console.log(error);
 						//message.delete(15000);
 						break;
@@ -239,9 +238,11 @@
 	}
 
 	async function constructServer(message){
+		const guild = await message.guild.fetch();
+
 		const serverConstructor = {
-			_id: message.guild.id, 
-			name: message.guild.name,
+			_id: guild.id, 
+			name: guild.name,
 			modules: {}
 		};
 
@@ -268,32 +269,32 @@
 		console.error(err);
 	});
 
-	const events = {
-		MESSAGE_REACTION_ADD: 'messageReactionAdd',
-		MESSAGE_REACTION_REMOVE: 'messageReactionRemove',
-	};
+	// const events = {
+	// 	MESSAGE_REACTION_ADD: 'messageReactionAdd',
+	// 	MESSAGE_REACTION_REMOVE: 'messageReactionRemove',
+	// };
 
-	GhostBot.on('raw', async event => {
-		// `event.t` is the raw event name
-		if (!events.hasOwnProperty(event.t)) return;
+	// GhostBot.on('raw', async event => {
+	// 	// `event.t` is the raw event name
+	// 	if (!events.hasOwnProperty(event.t)) return;
 
-		const { d: data } = event;
-		const user = GhostBot.users.cache.get(data.user_id);
-		const channel = GhostBot.channels.cache.get(data.channel_id) || await user.createDM();
+	// 	const { d: data } = event;
+	// 	const user = GhostBot.users.cache.get(data.user_id);
+	// 	const channel = GhostBot.channels.cache.get(data.channel_id) || await user.createDM();
 
-		// if the message is already in the cache, don't re-emit the event
-		if (channel.messages.cache.has(data.message_id)) return;
+	// 	// if the message is already in the cache, don't re-emit the event
+	// 	if (channel.messages.cache.has(data.message_id)) return;
 
-		// if you're on the master/v12 branch, use `channel.messages.fetch()`
-		const message = await channel.messages.fetch(data.message_id);
+	// 	// if you're on the master/v12 branch, use `channel.messages.fetch()`
+	// 	const message = await channel.messages.fetch(data.message_id);
 
-		// custom emojis reactions are keyed in a `name:ID` format, while unicode emojis are keyed by names
-		// if you're on the master/v12 branch, custom emojis reactions are keyed by their ID
-		const emojiKey = (data.emoji.id) ? `${data.emoji.name}:${data.emoji.id}` : data.emoji.name;
-		const reaction = message.reactions.cache.get(emojiKey);
+	// 	// custom emojis reactions are keyed in a `name:ID` format, while unicode emojis are keyed by names
+	// 	// if you're on the master/v12 branch, custom emojis reactions are keyed by their ID
+	// 	const emojiKey = (data.emoji.id) ? `${data.emoji.name}:${data.emoji.id}` : data.emoji.name;
+	// 	const reaction = message.reactions.cache.get(emojiKey);
 
-		GhostBot.emit(events[event.t], reaction, user);
-	});
+	// 	GhostBot.emit(events[event.t], reaction, user);
+	// });
 
 
 /* LOGIN */

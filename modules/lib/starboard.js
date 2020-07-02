@@ -28,11 +28,11 @@ function activate(schemaObject, botObject, discordObject, appObject, methodObjec
 	}, schemaObject.discordServerSchemaMethods);
 
 	botObject.on('messageReactionAdd', (reaction, user) => {
-		reactionUpdate(reaction, user, 1)
+		reactionUpdate(reaction, user, 1).catch(console.log);
 	});
 
 	botObject.on('messageReactionRemove', (reaction, user) => {
-		reactionUpdate(reaction, user, -1)
+		reactionUpdate(reaction, user, -1).catch(console.log);
 	});
 
 	botObject.on("message", message => {
@@ -45,15 +45,19 @@ function activate(schemaObject, botObject, discordObject, appObject, methodObjec
 
 	async function process(message){
 		try {
-			const server = await discordObject.Guild.findOne({_id: message.guild.id});
-			
-			if (!message.guild) return; //DMs shouldn't be handled
+			const channel = await message.channel.fetch();
+
+			const guild = await message.guild.fetch();
+			if (!guild) return; //DMs shouldn't be handled
+
+			const server = await discordObject.Guild.findOne({_id: guild.id});
+		
 			if (!server) return;
 			if (!(server.modules.starboard.enabled)) return;
 			if (!server.modules.starboard.starEverything) return;
 			if (!(server.modules.starboard.categories) || !(server.modules.starboard.categories[message.channel.parentID])) return;
 			
-			if (message.channel.name.startsWith('x')) return;
+			if (channel.name.startsWith('x')) return;
 			
 			if ((message.embeds.length === 0 || message.embeds.size === 0) && message.attachments.size === 0) return;
 			
@@ -99,15 +103,18 @@ function activate(schemaObject, botObject, discordObject, appObject, methodObjec
 	async function reactionUpdate(reaction, user, amount){
 		if (user.bot) return;
 
-		const message = reaction.message;
-		const server = await discordObject.Guild.findOne({_id: message.guild.id});
+		const message = await reaction.message.fetch();
+		const guild = message.guild.fetch()
+		const server = await discordObject.Guild.findOne({_id: guild.id}); 
 
 		if (reaction.emoji.name !== '⭐' || !server || !server.modules.starboard.enabled) {
 			return;
 		};
 
-		if (amount === 1 && reactionCheck(message, reaction, user, server) != "Success") {
-			user.send(reactionCheck(message, reaction, user, server));
+		const error = await reactionCheck(message, reaction, user, server);
+
+		if (amount === 1 && error != "Success") {
+			user.send(error);
 			reaction.remove(user);
 			return;
 		}
@@ -118,7 +125,7 @@ function activate(schemaObject, botObject, discordObject, appObject, methodObjec
 		}
 
 		const starCategory = server.modules.starboard.categories[message.channel.parentID];
-		const pinChannel = message.guild.channels.cache.get(starCategory.pinChannel.id);
+		const pinChannel = guild.channels.fetch(starCategory.pinChannel.id);
 
 		let starMessage = fetchStarMessage(starCategory, message);
 
@@ -150,11 +157,12 @@ function activate(schemaObject, botObject, discordObject, appObject, methodObjec
 
 	function fetchStarMessage(starCategory, message){
 		let starMessage = starCategory.messages[message.id];
+		const guild = message.guild.fetch();
 
 		if (!starMessage) {
 			starCategory.messages[message.id] = {
 				id: message.id,
-				url: `https://discordapp.com/channels/${message.guild.id}/${message.channel.id}/${message.id}`,
+				url: `https://discordapp.com/channels/${guild.id}/${message.channel.id}/${message.id}`,
 				stars: 0,
 				starboard: {
 					id: "",
@@ -188,8 +196,9 @@ function activate(schemaObject, botObject, discordObject, appObject, methodObjec
 		return starMessage;
 	}
 
-	function reactionCheck(message, reaction, user, server){
-	    if (message.author.id === user.id) return `${user}, you cannot star your own messages.`;
+	function reactionCheck(message, reaction, user, server){ 
+		const author = message.author.fetch();
+	    if (author.id === user.id) return `${user}, you cannot star your own messages.`;
 	    if (!message.channel.parentID) return `${user}, that channel is not in a category.`;
 	    if (!(server.modules.starboard.categories[message.channel.parentID])) return `${user}, that channel does not have a specified starboard.`;
 	    if (message.channel.id === server.modules.starboard.categories[message.channel.parentID].pinChannel.id) return `${user}, you cannot star messages in the star board.`;
