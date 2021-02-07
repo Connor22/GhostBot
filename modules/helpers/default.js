@@ -48,13 +48,9 @@
 	    return string[0].toUpperCase() + string.slice(1);
 	}
 
-function setMethods(methodObject){
-	methodObject.getTimeRemaining = getTimeRemaining;
-	methodObject.splitCommand = splitCommand;
-	methodObject.stripCommand = stripCommand;
-	methodObject.makeReadable = makeReadable;
-	methodObject.parseTime = parseTime;	
-	methodObject.capitalizeFirstLetter = capitalizeFirstLetter;
-}
-
-exports.setMethods = setMethods;
+	exports.getTimeRemaining = getTimeRemaining;
+	exports.splitCommand = splitCommand;
+	exports.stripCommand = stripCommand;
+	exports.makeReadable = makeReadable;
+	exports.parseTime = parseTime;	
+	exports.capitalizeFirstLetter = capitalizeFirstLetter;

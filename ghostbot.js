@@ -1,50 +1,21 @@
 "use strict";
-/* ESSENTIAL CODE */
-	const mongoose = require("mongoose");
+/* IMPORTS */
 	const DiscordApp = require("discord.js");
 	const GhostBot = new DiscordApp.Client({restWsBridgeTimeout: 50000, restTimeOffset: 5000});	
+	const helpers = require(`./modules/helpers/default.js`);
 
-/* MONGOOSE */
-	const options = {
-		autoReconnect:true,
-
-		poolSize: 20,
-		socketTimeoutMS: 480000,
-		keepAlive: 300000,
-
-		keepAliveInitialDelay : 300000,
-		connectTimeoutMS: 30000,
-		reconnectTries: Number.MAX_VALUE,
-		reconnectInterval: 1000,
-		useNewUrlParser: true
-	}
-	
-
-	const mainDBConnection = mongoose.createConnection('mongodb://mongo:27017/ghostbot', options);
-	const discordDBConnection = mongoose.createConnection('mongodb://mongo:27017/discord', options);
-	const twitchDBConnection = mongoose.createConnection('mongodb://mongo:27017/twitch', options);
+/* CONFIG */
+	const config = require("./config");
+	const backend = require(`./backends/${config.backend}/${config.backend}.js`);
 
 /* MODULES */
-	const config = require("./config");
-
-	const discordDB = {};
-	const twitchDB = {};
-	const mainDB = {};
-
-	const schemas = {};
-	const methods = {};
-
-	require("./lib/premodule.js").runPreModuleTasks(schemas, methods, mongoose);
-	
 	const modulesToLoad = config.modules;
 	modulesToLoad.push("default");
 	const commands = {};
 
-	require(`./modules/helpers/default.js`).setMethods(methods);
+	backend.runPreModuleTasks(schemas, methods, mongoose);
 
 	for (let i in modulesToLoad){
-		//require(`./modules/helpers/${modulesToLoad[i]}.js`).setMethods(methods);
-
 		require(`./modules/lib/${modulesToLoad[i]}.js`).activate(schemas, GhostBot, discordDB, DiscordApp, methods, commands, config, mongoose);
 		
 		commands[modulesToLoad[i]] = require(`./modules/commands/${modulesToLoad[i]}.js`);
@@ -60,16 +31,7 @@
 		}
 	}
 
-	require("./lib/postmodule.js").runPostModuleTasks(schemas, discordDB, mongoose);
-
-/* MONGOOSE MODELS */
-	discordDB.Guild = discordDBConnection.model('Guild', schemas.discordServerSchema);
-	discordDB.Channel = discordDBConnection.model('Channel', schemas.discordChannelSchema);
-
-	mainDB.Community = mainDBConnection.model('Community', schemas.communitySchema);
-	mainDB.UserModel = mainDBConnection.model('User', schemas.userSchema);
-
-	twitchDB.Channel = twitchDBConnection.model('Channel', schemas.twitchChannelSchema);
+	backend.runPostModuleTasks(schemas, discordDB, mongoose);
 
 /* MAIN FUNCTION */
 	GhostBot.on("message", message => {
@@ -84,44 +46,21 @@
 	});
 
 	async function process(message){
-		// console.log("Processing message");
+		/* EASY PROCESSING */
+			message.split = helpers.splitCommand(message, server);
+
 		/* FETCH SERVER */
-			let server = await discordDB.Guild.findOne({_id: message.guild.id});
-			// Handle first-time server access
-				if (!server){
-					// console.log("Constructing Server");
-					server = await constructServer(message);
-					server.save(function (err, server) {   
-				  		if (err) return console.log(err);    
-					});
-				}
-			// Check server initialization status
-				// Useful shortcut
-				message.split = methods.splitCommand(message, server);
-				// console.log(message.split);
-				if (!server.isInitialized && !message.split[0] === "initialize") return;
-			
-				
+			let server = backend.getServer(message.guild.id, message.split[0]);
 
 		/* FETCH CHANNEL */
-			let channel = await discordDB.Channel.findOne({_id: message.channel.id});
-			// Handle first-time channel access
-				if (!channel){
-					channel = new discordDB.Channel({_id: message.channel.id, name: message.channel.name, server: message.channel.parentID})
-					server.channels.addToSet(message.channel.id);
-					channel.save(function (err, channel) {   
-				  		if (err) return console.log(err);    
-					});
-					server.save(function (err, server) {   
-				  		if (err) return console.log(err);    
-					});
-				}
+			let channel = backend.getChannel(message.channel.id);
 
 		/* COMMAND PROCESSING */
 			//If message does not start with designated prefix, stop.
 				if (!message.content.startsWith(server.prefix)) return;
 			//Make sure user is cached before processing command
 				await message.guild.members.fetch(message.author);
+
 			commandCheck(message, channel, server);		
 	}
 
@@ -140,11 +79,11 @@
 						return;
 					}
 
-				/* Dev Command checking
+				// Dev Command checking */
 					if (message.author.id === config.ids.dev && message.cleanContent.includes(config.pin)){
 						if (commandName in devCommands) devCommands[commandName](message);
 					}
-				*/
+				
 
 
 				// Main Checking/Execution
@@ -173,7 +112,6 @@
 					default:
 						message.channel.send(`:boom: Critical Error - Check the logs`).catch(console.log); 
 						console.log(error);
-						//message.delete(15000);
 						break;
 				}
 			}
@@ -198,15 +136,7 @@
 
 				if (response) message.channel.send(response).catch(console.log);
 
-				server.markModified(`modules.${command.module}`);
-				// console.log(`About to save server`);
-				server.save(function (err, server) {   
-				  if (err) return console.log(err);    
-				});
-				// console.log(`About to save channel`);
-				channel.save(function (err, channel) {   
-				  if (err) return console.log(err);    
-				});
+				backend.save();
 			}
 			catch (error) {
 				switch (error.name){
@@ -225,31 +155,6 @@
 						break;
 				}
 			}
-	}
-
-/* MISC */
-	async function performMaintenance(){
-		for (let guild in GhostBot.guilds.cache.array()){
-			const guildObject = GhostBot.guilds.cache.array()[guild];
-			discordDB.Guild.findOne({_id: guildObject.id}).then((server) => {
-				server.performMaintenance(guildObject);
-				server.save();
-			});
-		};
-	}
-
-	async function constructServer(message){
-		const serverConstructor = {
-			_id: message.guild.id, 
-			name: message.guild.name,
-			modules: {}
-		};
-
-		for (let module in commands){
-			serverConstructor.modules[module] = {}
-		};
-
-		return new discordDB.Guild(serverConstructor);
 	}
 
 /* DEBUG */
@@ -300,6 +205,6 @@
 	mainDBConnection.once('open', () => {
 		GhostBot.login(config.tokens.bot);
 		//setInterval(performMaintenance, 20000);
-		performMaintenance();
+		backend.performMaintenance();
 	});
 
