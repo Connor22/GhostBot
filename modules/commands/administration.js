@@ -12,7 +12,6 @@
 				muteUser(bot, message.mentions.users.cache.first().id, message.channel.id, message.guild.id, true);
 			},
 			response: async function(bot, backend, message, channel, server){
-				//log("mute", message);
 				return `Muted ${message.mentions.users.cache.first().username}`;
 			},
 			defaultPermLevel: 1,
@@ -41,14 +40,14 @@
 			use: "<prefix>ban <userMention>",
 			check: async function(bot, backend, message, channel, server){
 				if (message.mentions.users.cache.array().length != 1) return {name: "CommandError", message: "Only one user can be unbanned per command"};
-				if (backend.getServerUserAttr(server.id, message.mentions.users.cache.first().id, "banned")) return {name: "CommandError", message: "That user is already banned"};
+				if (backend.ServerUser.attr.get(server.id, message.mentions.users.cache.first().id, "banned")) return {name: "CommandError", message: "That user is already banned"};
 				return "Success";
 			},
 			exec: async function(bot, backend, message, channel, server){
 				const user = await message.guild.members.get(message.mentions.users.cache.first().id)
 				user.roles.add(server.modules.administration.roles.softban).catch(console.log);
 
-				backend.setServerUserAttr(server, message.mentions.users.cache.first().id, true, "banned");
+				backend.ServerUser.attr.set(server, message.mentions.users.cache.first().id, true, "banned");
 			},
 			response: async function(bot, backend, message, channel, server){
 				console.log("<@" + message.author.id + "> banned <@" + message.mentions.users.cache.first().id + ">");
@@ -70,7 +69,7 @@
 				const user = await message.guild.members.get(message.mentions.users.cache.first().id)
 				user.roles.remove(server.modules.administration.roles.softban).catch(console.log);
 
-				backend.setServerUserAttr(server.id, message.mentions.users.cache.first().id, false, "banned");
+				backend.ServerUser.attr.set(server.id, message.mentions.users.cache.first().id, false, "banned");
 			},
 			response: async function(bot, backend, message, channel, server){
 				//log("unban", message);

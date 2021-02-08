@@ -1,5 +1,3 @@
-function activate(schemaObject, botObject, discordObject, appObject, methodObject, commandObject, config, mongoose){
+exports.activate = function(backend){
 	return;
 }
-
-exports.activate = activate;

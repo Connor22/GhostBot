@@ -1,0 +1,18 @@
+{
+	"strings" : {
+		"botName" : "",
+		"PIN" : ""
+	}, 
+	"ids" : {
+		"dev" : ""
+	},
+	"tokens" : {
+		"bot" : ""
+	},
+	"modules" : [
+		"administration",
+		"usercustom",
+		"starboard"
+	],
+	"backend" : "mongo"
+}

@@ -4,15 +4,15 @@ exports.activate = function(backend){
 	backend.addServerAttribute("administration", "roles", "category");
 
 	for (role of ["admin", "mod", "jmod", "softban"]){
-		backend.addServerSubAttr("administration", role, "category", "roles");
-		backend.addServerSubAttr("administration", "name", "string", "roles", role);
-		backend.addServerSubAttr("administration", "id", "string", "roles", role);
+		backend.add.ServerSubAttr("administration", role, "category", "roles");
+		backend.add.ServerSubAttr("administration", "name", "string", "roles", role);
+		backend.add.ServerSubAttr("administration", "id", "string", "roles", role);
 	}
 
-	backend.addServerUserAttribute("administration", "banned", "boolean", false);
+	backend.add.ServerUserAttribute("administration", "banned", "boolean", false);
 
-	backend.isUserBanned = function(){
-		return backend.getUserAttr(server, userID, "banned");
+	backend.get.isUserBanned = function(server, userID){
+		return backend.get.UserAttr(server, userID, "banned");
 	}
 }
 
