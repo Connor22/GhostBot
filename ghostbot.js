@@ -16,9 +16,12 @@
 	backend.runPreModuleTasks(schemas, methods, mongoose);
 
 	for (let i in modulesToLoad){
-		require(`./modules/lib/${modulesToLoad[i]}.js`).activate(schemas, GhostBot, discordDB, DiscordApp, methods, commands, config, mongoose);
+		let lib = require(`./modules/lib/${modulesToLoad[i]}.js`);
+		//backend manipulation
+			lib.activate(backend);
+			lib.addTriggers(GhostBot);
 		
-		commands[modulesToLoad[i]] = require(`./modules/commands/${modulesToLoad[i]}.js`);
+		commands[modulesToLoad[i]] = require(`./modules/commands/${modulesToLoad[i]}.js`).commands;
 		
 		for (let command in commands[modulesToLoad[i]]){
 			commands[modulesToLoad[i]][command].module = modulesToLoad[i];
@@ -127,12 +130,12 @@
 		
 		// Check for command-specific items
 			try{ 
-				const commandVerification = await command.check(message, channel, server);
+				const commandVerification = await command.check(bot, backend, message, channel, server);
 				if (commandVerification != "Success") throw commandVerification;
 			
-				await command.exec(message, channel, server);
+				await command.exec(bot, backend, message, channel, server);
 		
-				const response = await command.response(message, channel, server);
+				const response = await command.response(bot, backend, message, channel, server);
 
 				if (response) message.channel.send(response).catch(console.log);
 

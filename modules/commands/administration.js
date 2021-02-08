@@ -1,17 +1,17 @@
 /* COMMAND OBJECTS */
-	const administrationModule = {
+	exports.commands = {
 		"mute" : {
 			description: "Mute the mentioned user from the current channel, preventing them from sending messages",
 			use: "<prefix>mute <userMention>",
-			check: async function(message, channel, server){
+			check: async function(bot, backend, message, channel, server){
 				if (message.mentions.users.cache.array().length != 1) return {name: "CommandError", message: "Only one user can be muted per command"};
 				
 				return "Success";
 			},
-			exec: async function(message, channel, server){
-				muteUser(message.mentions.users.cache.first().id, message.channel.id, message.guild.id, true);
+			exec: async function(bot, backend, message, channel, server){
+				muteUser(bot, message.mentions.users.cache.first().id, message.channel.id, message.guild.id, true);
 			},
-			response: async function(message, channel, server){
+			response: async function(bot, backend, message, channel, server){
 				//log("mute", message);
 				return `Muted ${message.mentions.users.cache.first().username}`;
 			},
@@ -21,15 +21,15 @@
 		"unmute" : {
 			description: "Unmute the mentioned user from the current channel",
 			use: "<prefix>unmute <userMention>",
-			check: async function(message, channel, server){
+			check: async function(bot, backend, message, channel, server){
 				if (message.mentions.users.cache.array().length != 1) return {name: "CommandError", message: "Only one user can be muted per command"};
 				
 				return "Success";
 			},
-			exec: async function(message, channel, server){
-				unmuteUser(message.mentions.users.cache.first().id, message.channel.id, message.guild.id, true);
+			exec: async function(bot, backend, message, channel, server){
+				unmuteUser(bot, message.mentions.users.cache.first().id, message.channel.id, message.guild.id, true);
 			},
-			response: async function(message, channel, server){
+			response: async function(bot, backend, message, channel, server){
 				//log("unmute", message);
 				return `Unmuted ${message.mentions.users.cache.first().username}`;
 			},
@@ -39,19 +39,18 @@
 		"ban" : {
 			description: "Softbans the user, preventing them from chatting in any non-appeal channel.",
 			use: "<prefix>ban <userMention>",
-			check: async function(message, channel, server){
+			check: async function(bot, backend, message, channel, server){
 				if (message.mentions.users.cache.array().length != 1) return {name: "CommandError", message: "Only one user can be unbanned per command"};
-				if (server.isUserBanned(message.mentions.users.cache.first().id)) return {name: "CommandError", message: "That user is already banned"};
+				if (backend.getServerUserAttr(server.id, message.mentions.users.cache.first().id, "banned")) return {name: "CommandError", message: "That user is already banned"};
 				return "Success";
 			},
-			exec: async function(message, channel, server){
+			exec: async function(bot, backend, message, channel, server){
 				const user = await message.guild.members.get(message.mentions.users.cache.first().id)
 				user.roles.add(server.modules.administration.roles.softban).catch(console.log);
 
-				server.ban(message.mentions.users.cache.first().id);
+				backend.setServerUserAttr(server, message.mentions.users.cache.first().id, true, "banned");
 			},
-			response: async function(message, channel, server){
-				//log("ban", message);
+			response: async function(bot, backend, message, channel, server){
 				console.log("<@" + message.author.id + "> banned <@" + message.mentions.users.cache.first().id + ">");
 
 				return (`Banned <@${message.mentions.users.cache.first().id}>`);
@@ -62,18 +61,18 @@
 		"unban" : {
 			description: "Removes the softban from the mentioned user",
 			use: "<prefix>ban <userMention>",
-			check: async function(message, channel, server){
+			check: async function(bot, backend, message, channel, server){
 				if (message.mentions.users.cache.array().length != 1) return {name: "CommandError", message: "Only one user can be unbanned per command"};
-				if (!server.isUserBanned(message.mentions.users.cache.first().id)) return {name: "CommandError", message: "That user is not banned"};
+				if (!backend.isUserBanned(server, message.mentions.users.cache.first().id)) return {name: "CommandError", message: "That user is not banned"};
 				return "Success";
 			},
-			exec: async function(message, channel, server){
+			exec: async function(bot, backend, message, channel, server){
 				const user = await message.guild.members.get(message.mentions.users.cache.first().id)
 				user.roles.remove(server.modules.administration.roles.softban).catch(console.log);
 
-				server.unban(message.mentions.users.cache.first().id);
+				backend.setServerUserAttr(server.id, message.mentions.users.cache.first().id, false, "banned");
 			},
-			response: async function(message, channel, server){
+			response: async function(bot, backend, message, channel, server){
 				//log("unban", message);
 				console.log("<@" + message.author.id + "> unbanned <@" + message.mentions.users.cache.first().id + ">");
 
@@ -86,10 +85,10 @@
 			description: "Allows users to chat in the channel. Requires proper setup.",
 			use: "<prefix>open",
 			aliases: ["openchannel", "openchat"],
-			check: async function(message, channel, server){
+			check: async function(bot, backend, message, channel, server){
 				return "Success";
 			},
-			exec: async function(message, channel, server){
+			exec: async function(bot, backend, message, channel, server){
 				message.channel.overwritePermissions(message.guild.roles.find(role => role.name  === "@everyone"), {"SEND_MESSAGES": true});
 				message.channel.send("Opened channel");
 			},
@@ -100,10 +99,10 @@
 			description: "Blocks users from chatting in the channel. Requires proper setup.",
 			use: "<prefix>close",
 			aliases: ["closechannel", "closechat"],
-			check: async function(message, channel, server){
+			check: async function(bot, backend, message, channel, server){
 				return "Success";
 			},
-			exec: async function(message, channel, server){
+			exec: async function(bot, backend, message, channel, server){
 				message.channel.overwritePermissions(message.guild.roles.find(role => role.name  === "@everyone"), {"SEND_MESSAGES": false});
 				message.channel.send("Closed channel");
 			},
@@ -113,17 +112,17 @@
 		"banrole" : {
 			description: "Defines the role that the ban command will use",
 			use: "<prefix>banrole <role mention>",
-			check: async function(message, channel, server){
+			check: async function(bot, backend, message, channel, server){
 				if (!message.mentions.roles.first()) return {name: "CommandError", message: "Please mention a role"};
 
 				return "Success";
 			},
-			exec: async function(message, channel, server){
-				server.defineBanRole(message.mentions.roles.first().id);
+			exec: async function(bot, backend, message, channel, server){
+				backend.setServerAttr(server.id, message.mentions.roles.first().id, roles, softban);
 
 				return;
 			},
-			response: async function(message, channel, server){
+			response: async function(bot, backend, message, channel, server){
 				return `The banrole is now \<@&${server.modules.administration.roles.softban}\>`;
 			},
 			defaultPermLevel: 3,
@@ -132,17 +131,17 @@
 		"adminrole" : {
 			description: "Defines the role for Administrators",
 			use: "<prefix>adminrole <role mention>",
-			check: async function(message, channel, server){
+			check: async function(bot, backend, message, channel, server){
 				if (!message.mentions.roles.first()) return {name: "CommandError", message: "Please mention a role"};
 
 				return "Success";
 			},
-			exec: async function(message, channel, server){
-				server.defineAdminRole(message.mentions.roles.first().id);
+			exec: async function(bot, backend, message, channel, server){
+				backend.setServerAttr(server.id, message.mentions.roles.first().id, roles, admin);
 
 				return;
 			},
-			response: async function(message, channel, server){
+			response: async function(bot, backend, message, channel, server){
 				return `The admin role is now \<@&${server.modules.administration.roles.admin.id}\>`;
 			},
 			defaultPermLevel: 3,
@@ -151,17 +150,17 @@
 		"modrole" : {
 			description: "Defines the role for Moderators",
 			use: "<prefix>modrole <role mention>",
-			check: async function(message, channel, server){
+			check: async function(bot, backend, message, channel, server){
 				if (!message.mentions.roles.first()) return {name: "CommandError", message: "Please mention a role"};
 
 				return "Success";
 			},
-			exec: async function(message, channel, server){
-				server.defineModRole(message.mentions.roles.first().id);
+			exec: async function(bot, backend, message, channel, server){
+				backend.setServerAttr(server.id, message.mentions.roles.first().id, roles, mod);
 
 				return;
 			},
-			response: async function(message, channel, server){
+			response: async function(bot, backend, message, channel, server){
 				return `The mod role is now \<@&${server.modules.administration.roles.mod.id}\>`;
 			},
 			defaultPermLevel: 3,
@@ -170,17 +169,17 @@
 		"jmodrole" : {
 			description: "Defines the role for Junior Moderators",
 			use: "<prefix>jmodrole <role mention>",
-			check: async function(message, channel, server){
+			check: async function(bot, backend, message, channel, server){
 				if (!message.mentions.roles.first()) return {name: "CommandError", message: "Please mention a role"};
 
 				return "Success";
 			},
-			exec: async function(message, channel, server){
-				server.defineJModRole(message.mentions.roles.first().id);
+			exec: async function(bot, backend, message, channel, server){
+				backend.setServerAttr(server.id, message.mentions.roles.first().id, roles, jmod);
 
 				return;
 			},
-			response: async function(message, channel, server){
+			response: async function(bot, backend, message, channel, server){
 				return `The junior mod role is now \<@&${server.modules.administration.roles.jmod.id}\>`;
 			},
 			defaultPermLevel: 3,
@@ -194,10 +193,10 @@
 	"" : {
 		description: "",
 		use: "",
-		check: async function(message, channel, server){
+		check: async function(bot, backend, message, channel, server){
 			return "Success";
 		},
-		exec: async function(message, channel, server){
+		exec: async function(bot, backend, message, channel, server){
 		},
 		defaultPermLevel: 0,
 		possibleLengths: []
@@ -243,8 +242,8 @@
 		logChannel.send("", embd);
 	}
 
-	async function muteUser(userID, channelID, serverID, command) {
-		const server = botObject.guilds.cache.get(serverID);
+	exports.muteUser = async function(bot, userID, channelID, serverID, command) {
+		const server = bot.guilds.cache.get(serverID);
 		const user = server.members.get(userID);
 		const channel = server.channels.get(channelID);
 
@@ -262,8 +261,8 @@
 		}
 	}
 
-	async function unmuteUser(userID, channelID, serverID, command){
-		const server = botObject.guilds.cache.get(serverID);
+	exports.unmuteUser = async function(bot, userID, channelID, serverID, command){
+		const server = bot.guilds.cache.get(serverID);
 		const user = server.members.get(userID);
 		const channel = server.channels.get(channelID);
 
@@ -277,5 +276,3 @@
 
 		user.roles.remove(server.roles.find(role => role.name === roleName));
 	}
-
-module.exports = administrationModule;
