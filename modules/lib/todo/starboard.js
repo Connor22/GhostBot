@@ -21,12 +21,6 @@ function activate(schemaObject, botObject, discordObject, appObject, methodObjec
 		}
 	};
 
-	schemaObject.discordServerSchemaConstructor.modules.starboard = starboardSchema;
-
-	schemaObject.discordServerSchemaMethods = Object.assign({
-		
-	}, schemaObject.discordServerSchemaMethods);
-
 	botObject.on('messageReactionAdd', (reaction, user) => {
 		reactionUpdate(reaction, user, 1)
 	});

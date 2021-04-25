@@ -1,19 +1,19 @@
 exports.activate = function(backend){
-	backend.addServerAttribute("administration", "logChannel", "string");
+	backend.Server.attr.add("administration", "logChannel", "string");
 
-	backend.addServerAttribute("administration", "roles", "category");
+	backend.Server.attr.add("administration", "roles", "category");
 
 	for (role of ["admin", "mod", "jmod", "softban"]){
-		backend.add.ServerSubAttr("administration", role, "category", "roles");
-		backend.add.ServerSubAttr("administration", "name", "string", "roles", role);
-		backend.add.ServerSubAttr("administration", "id", "string", "roles", role);
+		backend.Server.attr.add("administration", role, "category", "roles");
+		backend.Server.attr.add("administration", "name", "string", "roles", role);
+		backend.Server.attr.add("administration", "id", "string", "roles", role);
 	}
 
-	backend.add.ServerUserAttribute("administration", "banned", "boolean", false);
+	backend.ServerUser.attr.add("administration", "banned", "boolean");
 
-	backend.get.isUserBanned = function(server, userID){
-		return backend.get.UserAttr(server, userID, "banned");
-	}
+	backend.isUserBanned = (server, userID) => {
+		return this.ServerUser.attr.get(server, "administration", userID, "banned");
+	};
 }
 
 // Triggers
@@ -30,7 +30,7 @@ exports.activate = function(backend){
 	async function onJoin(member){
 		const server = await backend.getServer(member.guild.id);
 			
-		if (!server && debug){
+		if (!server && process.env.DEBUG){
 			console.log("Could not find server");
 			return;
 		}
@@ -42,20 +42,23 @@ exports.activate = function(backend){
 
 // Bans
 	exports.reban = async function(backend, server, member){
-		if (backend.isUserBanned(server, member.id)) member.roles.add(server.modules.administration.roles.softban.id);
+		if (backend.isUserBanned(server, member.id)) 
+			member.roles.add(backend.Server.attr.get("administration", "roles", "softban", "id");
 	}
 
 // Permissions
-	exports.permissionLevelChecker = function(server, member){
-		if (!member) return 0;
+	exports.permissionLevelChecker = function(backend, message){
+		if (!message.member) return 0;
 
-		if (member.id === config.ids.dev){
+		if (message.member.id === config.ids.dev){
 			return 4;
-		} else if (member.roles.has(server.modules.administration.roles.admin.id) || member.hasPermission('ADMINISTRATOR')){
+		} else if (message.member.hasPermission('ADMINISTRATOR') || 
+			message.member.roles.has(backend.Server.attr.get("administration", "id", "roles", "admin")))
+		{
 			return 3;
-		} else if (member.roles.has(server.modules.administration.roles.mod.id)){
+		} else if (message.member.roles.has(backend.Server.attr.get("administration", "id", "roles", "mod"))){
 			return 2;
-		} else  if (member.roles.has(server.modules.administration.roles.jmod.id)) {
+		} else  if (message.member.roles.has(backend.Server.attr.get("administration", "id", "roles", "jmod"))){
 			return 1;
 		} else {
 			return 0;
@@ -63,10 +66,10 @@ exports.activate = function(backend){
 	};
 
 // Commands
-	exports.checkCommand = function(command, message){
+	exports.checkCommand = function(commandObject, message){
 		for (let module in commandObject){
 			if (command in commandObject[module]){
-				//if (!server.modules[module].enabled) return {name: "CommandError", message: "That module is disabled"};				
+				//if (!backend.Server.attr.get(module].enabled) return {name: "CommandError", message: "That module is disabled"};				
 				return commandObject[module][command];
 			}
 		}
@@ -76,9 +79,9 @@ exports.activate = function(backend){
 
 // Maintenance
 	exports.maintenance = {
-		(backend, server, user) => {
-		// Reban users who lost the role for any reason
-			server.users.cache.forEach(function(user){
-				exports.reban(backend, server, user);
-			});
+		//(backend, server, user) => {
+		//  // Reban users who lost the role for any reason
+		//	server.users.cache.forEach(function(user){
+		//		exports.reban(backend, server, user);
+		//});
 	}

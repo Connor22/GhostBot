@@ -2,29 +2,19 @@ exports.check = (id) => {
 
 };
 
-exports.refresh = (id) => {
+exports.refresh = () => {
 
 };
 
 exports.prefix = {
-	set: (serverID, prefix) => {
-		
-	},
-	get: (serverID) => {
-		
-	}
+	set: (serverID, prefix) => {},
+	get: (serverID) => {}
 };
 
 exports.modules = {
-	enable: (serverID, moduleName) => {
-
-	},
-	disable: (serverID, moduleName) => {
-
-	},
-	isEnabled: (serverID, moduleName) => {
-
-	}
+	enable: (serverID, moduleName) => {},
+	disable: (serverID, moduleName) => {},
+	isEnabled: (serverID, moduleName) => {}
 };
 
 exports.attr = {

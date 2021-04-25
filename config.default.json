@@ -10,9 +10,7 @@
 		"bot" : ""
 	},
 	"modules" : [
-		"administration",
-		"usercustom",
-		"starboard"
+		"administration"
 	],
 	"backend" : "mongo"
 }

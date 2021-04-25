@@ -13,61 +13,68 @@
 	modulesToLoad.push("default");
 	const commands = {};
 
-	backend.runPreModuleTasks(schemas, methods, mongoose);
+	const premodule = backend.runPreModuleTasks();
 
-	for (let i in modulesToLoad){
-		let lib = require(`./modules/lib/${modulesToLoad[i]}.js`);
+	for (let module of modulesToLoad){
+		backend.modules[module] = module;
+
+		let lib = require(`./modules/lib/${module}.js`);
 		//backend manipulation
 			lib.activate(backend);
 			lib.addTriggers(GhostBot);
 		
-		commands[modulesToLoad[i]] = require(`./modules/commands/${modulesToLoad[i]}.js`).commands;
+		commands[module] = require(`./modules/commands/${module}.js`).commands;
 		
-		for (let command in commands[modulesToLoad[i]]){
-			commands[modulesToLoad[i]][command].module = modulesToLoad[i];
-			if (commands[modulesToLoad[i]][command].aliases){
-				for (let n in commands[modulesToLoad[i]][command].aliases){
-					commands[modulesToLoad[i]][commands[modulesToLoad[i]][command].aliases[n]] = commands[modulesToLoad[i]][command];
-					commands[modulesToLoad[i]][commands[modulesToLoad[i]][command].aliases[n]].use = `<prefix>${commands[modulesToLoad[i]][command].aliases[n]}`;
+		for (let command in commands[module]){
+			commandObject = commands[module][command];
+			commandObject.module = module;
+			if (commandObject.aliases){
+				for (let alias of commandObject.aliases){
+					commands[module][alias] = commandObject;
+					commands[module][alias].use = `<prefix>${alias}`;
 				}
 			}
 		}
 	}
 
-	backend.runPostModuleTasks(schemas, discordDB, mongoose);
+	backend.runPostModuleTasks();
 
 /* MAIN FUNCTION */
 	GhostBot.on("message", message => {
 		/* CHECKS */
-			if (!message.guild) return; //DMs shouldn't be handled
-			if (message.author.bot) return; //Don't respond to bots
-			try{
-				process(message);
-			} catch (err) {
-				console.log(err);
-			}
+			//DMs shouldn't be handled
+				if (!message.guild) return; 
+			//Don't respond to bots
+				if (message.author.bot) return; 
+
+
+		try{
+			process(message);
+		} catch (err) {
+			console.log(err);
+		}
+
 	});
 
 	async function process(message){
-		/* EASY PROCESSING */
-			message.split = helpers.splitCommand(message, server);
+		/* CHECK IF SERVER IS INITIALIZED */
+			if (!backend.Server.active.get(message.guild.id, "default", "initialized")) return;
+			const prefix = backend.Server.prefix.get(message.guild.id);
+			message.split = helpers.splitCommand(message, (prefix ? prefix.length : 1));
 
-		/* FETCH SERVER */
-			let server = backend.getServer(message.guild.id, message.split[0]);
-
-		/* FETCH CHANNEL */
-			let channel = backend.getChannel(message.channel.id);
+		/* CHECK IF BOT IS ENABLED IN CHANNEL */
+			if (!backend.Channel.isActive(message.channel.id, message.channel.name, message.guild.id)) return;
 
 		/* COMMAND PROCESSING */
 			//If message does not start with designated prefix, stop.
-				if (!message.content.startsWith(server.prefix)) return;
+				if (!message.content.startsWith(backend.Server.prefix.get(message.guild.id))) return;
 			//Make sure user is cached before processing command
 				await message.guild.members.fetch(message.author);
 
-			commandCheck(message, channel, server);		
+			commandCheck(message);		
 	}
 
-	function commandCheck(message, channel, server){
+	function commandCheck(message){
 		const commandName = message.split[0];
 
 		//Main command checker block
@@ -75,7 +82,8 @@
 				// Misc Checking
 					if (commandName == "ping"){
 						if (message.author.id == "82980874429140992"){
-							message.channel.send(server.checkCommand(commandName.toLowerCase(), message).response(message, channel, server)).catch(console.log);
+							message.channel.send(checkCommand(message.guild.id, commandName.toLowerCase(), message)
+								.response(message)).catch(console.log);
 						} else {
 							message.reply("ping can only be used by Thoro please do not attempt again thanks");
 						}
@@ -83,33 +91,35 @@
 					}
 
 				// Dev Command checking */
-					if (message.author.id === config.ids.dev && message.cleanContent.includes(config.pin)){
+					if (devCommands && message.author.id === config.ids.dev && message.cleanContent.includes(config.pin)){
 						if (commandName in devCommands) devCommands[commandName](message);
 					}
 				
 
 
 				// Main Checking/Execution
-					const command = server.checkCommand(commandName.toLowerCase(), message);
+					const command = checkCommand(commandName.toLowerCase(), message);
 
 					if (command.name){
 						if (command.name === "CommandNotFoundError"){
 							return;
 						} else throw command;
-					} else if (!command.module === "default" && server.modules[command.module].enabled){
-						throw {name: "CommandError", message: `Module ${command.module} is not enabled on this server.`};
+					} else if (!command.module === "default" && backend.Server.attr.get(message.guild.id, command.module, "enabled")){
+						throw {name: "CommandError", message: `Module ${command.module} is not enabled on this message.guild.id.`};
 					}
 					
-					commandExec(message, server, channel, command);
+					commandExec(message, command);
 				
 			} catch (error) {
 				switch (error.name){
 					case "CommandError":
-						message.channel.send(`:no_entry_sign: Invalid Command \`${commandName}\`: ${error.message}`).then((message) => message.delete(10000)).catch(console.log);
+						message.channel.send(`:no_entry_sign: Invalid Command \`${commandName}\`: ${error.message}`)
+							.then((message) => message.delete(10000)).catch(console.log);
 						message.delete(15000);
 						break;
 					case "OtherError":
-						message.channel.send(`:no_entry: Error with command \`${commandName}\`: ${error.message}`).then((message) => message.delete(10000)).catch(console.log);
+						message.channel.send(`:no_entry: Error with command \`${commandName}\`: ${error.message}`)
+							.then((message) => message.delete(10000)).catch(console.log);
 						message.delete(15000);
 						break;
 					default:
@@ -120,35 +130,38 @@
 			}
 	}
 
-	async function commandExec(message, server, channel, command){
+	async function commandExec(command, message){
 		// Check if there are the correct number of arguments
-			if (!command.possibleLengths.includes(message.split.length) && !command.possibleLengths.includes(0)) throw {name: "CommandError", message: "Invalid number of arguments"};
+			if (!command.possibleLengths.includes(message.split.length) && !command.possibleLengths.includes(0)) 
+				throw {name: "CommandError", message: "Invalid number of arguments"};
 
 		// Check if the user is the proper permission level to use that command
-			const permissionLevel = server.permissionLevelChecker(message.member, message.guild.id);
-			if (permissionLevel < command.defaultPermLevel) throw {name: "CommandError", message: "Invalid permission level."}
+			const permissionLevel = backend.permissionLevelChecker(message);
+			if (permissionLevel < command.defaultPermLevel) 
+				throw {name: "CommandError", message: "Invalid permission level."}
 		
 		// Check for command-specific items
 			try{ 
-				const commandVerification = await command.check(bot, backend, message, channel, server);
+				const commandVerification = await command.check(bot, backend, message);
 				if (commandVerification != "Success") throw commandVerification;
 			
-				await command.exec(bot, backend, message, channel, server);
+				await command.exec(bot, backend, message);
 		
-				const response = await command.response(bot, backend, message, channel, server);
+				const response = await command.response(bot, backend, message);
 
 				if (response) message.channel.send(response).catch(console.log);
 
 				backend.save();
-			}
-			catch (error) {
+			} catch (error) {
 				switch (error.name){
 					case "CommandError":
-						message.channel.send(`:no_entry_sign: Invalid Command \`${message.split[0]}\`: ${error.message}`).then((message) => message.delete(10000)).catch(console.log);
+						message.channel.send(`:no_entry_sign: Invalid Command \`${message.split[0]}\`: ${error.message}`)
+							.then((message) => message.delete(10000)).catch(console.log);
 						message.delete(15000);
 						break;
 					case "OtherError":
-						message.channel.send(`:no_entry: Error with command \`${message.split[0]}\`: ${error.message}`).then((message) => message.delete(10000)).catch(console.log);
+						message.channel.send(`:no_entry: Error with command \`${message.split[0]}\`: ${error.message}`)
+							.then((message) => message.delete(10000)).catch(console.log);
 						message.delete(15000);
 						break;
 					default:
@@ -161,9 +174,6 @@
 	}
 
 /* DEBUG */
-	function test(server){
-	}
-
 	GhostBot.on("ready", () => {
 		console.log("ready");
 	});
@@ -181,6 +191,7 @@
 		MESSAGE_REACTION_REMOVE: 'messageReactionRemove',
 	};
 
+/* Re-emit emoji events 
 	GhostBot.on('raw', async event => {
 		// `event.t` is the raw event name
 		if (!events.hasOwnProperty(event.t)) return;
@@ -202,12 +213,12 @@
 
 		GhostBot.emit(events[event.t], reaction, user);
 	});
-
+/* */
 
 /* LOGIN */
 	mainDBConnection.once('open', () => {
 		GhostBot.login(config.tokens.bot);
-		//setInterval(performMaintenance, 20000);
-		backend.performMaintenance();
+		// setInterval(performMaintenance, 20000);
+		// backend.performMaintenance();
 	});
 
