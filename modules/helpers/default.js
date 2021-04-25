@@ -1,10 +1,10 @@
 /* FUNCTIONS */
-	function splitCommand(message, server){
-		return message.content.substr(server.prefix.length).split(" ");
+	function splitCommand(message, prefixLength){
+		return message.content.substr(prefixLength).split(" ");
 	}
 
-	function stripCommand(message, server) {
-		return message.content.substr(server.prefix.length + splitCommand(message, server)[0].length + 1);
+	function stripCommand(message, prefixLength) {
+		return message.content.substr(prefixLength + splitCommand(message, prefixLength)[0].length + 1);
 	}
 
 	function getTimeRemaining(tracker, id){

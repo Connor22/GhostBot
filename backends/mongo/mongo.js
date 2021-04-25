@@ -1,8 +1,8 @@
 /* ESSENTIAL CODE */
 	const mongoose = require("mongoose");
 
-	exports.runPreModuleTasks = require("./premodule.js").runPreModuleTasks;
-	exports.runPostModuleTasks = require("./postmodule.js").runPostModuleTasks;
+	const runPreModuleTasks = require("./premodule.js").runPreModuleTasks;
+	const runPostModuleTasks = require("./postmodule.js").runPostModuleTasks;
 
 /* CONNECTIONS */
 	const options = {
@@ -21,23 +21,26 @@
 	
 	const mainDBConnection = mongoose.createConnection('mongodb://mongo:27017/bot', options);
 	const discordDBConnection = mongoose.createConnection('mongodb://mongo:27017/discord', options);
-	const twitchDBConnection = mongoose.createConnection('mongodb://mongo:27017/twitch', options);
 
 /* CONTAINERS */
 	const db = {
-		discord = {},
-		twitch = {},
-		main = {}
+		discord = {}
 	};
 
 /* MODELS */
 	db.discord.Guild = discordDBConnection.model('Guild', schemas.discordServerSchema);
 	db.discord.Channel = discordDBConnection.model('Channel', schemas.discordChannelSchema);
 
-	db.main.Community = mainDBConnection.model('Community', schemas.communitySchema);
-	db.main.UserModel = mainDBConnection.model('User', schemas.userSchema);
+/* MODULE SETUP */
+	const construct = {};
 
-	db.twitch.Channel = twitchDBConnection.model('Channel', schemas.twitchChannelSchema);
+	exports.premodule = () => {
+		runPreModuleTasks(mongoose, construct);	
+	};
+
+	exports.postmodule = () => {
+		runPostModuleTasks(mongoose, construct);
+	};
 
 /* GET METHODS */
 	exports.maintenance = async function(bot){
@@ -50,14 +53,18 @@
 		}
 	}
 
-	exports.save = function(server, channel, modified){
+	exports.save = (serverid, channelid, modified) => {
+		if (global.debug) console.log(`About to save server`);
 		if (modified) server.markModified(modified);
-		if (debug) console.log(`About to save server`);
 		server.save(function (err, server) {   
 		  if (err) return console.log(err);    
 		});
-		if (debug) console.log(`About to save channel`);
-		channel.save(function (err, channel) {   
-		  if (err) return console.log(err);    
-		});
+
+		if (channelid) {
+			if (global.debug) console.log(`About to save channel`);
+			const channel = await 
+			channel.save(function (err, channel) {   
+		  		if (err) return console.log(err);    
+			});
+		}
 	}
