@@ -8,16 +8,14 @@ module.exports = (mongoose) => {
 
 	discordUserSchema.methods = {
 		// Attribute manipulation
-			addAttr: () => {
-
-			},
-
-			get: () => {
+			get: (module, path) => {
 
 			}, 
 
-			set: () => {
+			set: (module, path, value) => {
 
 			},
 	};
+
+	return discordUserSchema;
 }
