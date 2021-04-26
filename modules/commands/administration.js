@@ -44,16 +44,18 @@
 				if (message.mentions.users.cache.array().length != 1) 
 					return {name: "CommandError", message: "Only one user can be unbanned per command"};
 
-				if (backend.ServerUser.attr.get(message.guild.id, message.mentions.users.cache.first().id, "banned")) 
+				if (backend.User.attr.get(message.mentions.users.cache.first().id, message.guild.id, "administration", "banned")) 
 					return {name: "CommandError", message: "That user is already banned"};
 
 				return "Success";
 			},
 			exec: async function(bot, backend, message){
 				const user = await message.guild.members.get(message.mentions.users.cache.first().id)
-				user.roles.add(server.modules.administration.roles.softban).catch(console.log);
+				const banRole = backend.Server.attr.get(message.guild.id, "administration", "id", "roles", "softban");
+				
+				user.roles.add(banRole).catch(console.log);
 
-				backend.ServerUser.attr.set(server, message.mentions.users.cache.first().id, true, "banned");
+				backend.User.attr.set(message.mentions.users.cache.first().id, message.guild.id, "administration", "banned", true);
 			},
 			response: async function(bot, backend, message){
 				console.log("<@" + message.author.id + "> banned <@" + message.mentions.users.cache.first().id + ">");
@@ -76,13 +78,14 @@
 				return "Success";
 			},
 			exec: async function(bot, backend, message){
-				const user = await message.guild.members.get(message.mentions.users.cache.first().id)
-				user.roles.remove(server.modules.administration.roles.softban).catch(console.log);
+				const user = await message.guild.members.get(message.mentions.users.cache.first().id);
+				const banRole = backend.Server.attr.get(message.guild.id, "administration", "id", "roles", "softban");
+				
+				user.roles.remove(banRole).catch(console.log);
 
 				backend.ServerUser.attr.set(message.guild.id, message.mentions.users.cache.first().id, false, "banned");
 			},
 			response: async function(bot, backend, message){
-				//log("unban", message);
 				console.log("<@" + message.author.id + "> unbanned <@" + message.mentions.users.cache.first().id + ">");
 
 				return (`Unbanned <@${message.mentions.users.cache.first().id}>`);
@@ -136,7 +139,8 @@
 				return;
 			},
 			response: async function(bot, backend, message){
-				return `The banrole is now \<@&${server.modules.administration.roles.softban}\>`;
+				const newRole = backend.Server.attr.get(message.guild.id, "administration", "id", "roles", "softban");
+				return `The banrole is now \<@&${newRole}\>`;
 			},
 			defaultPermLevel: 3,
 			possibleLengths: [2]
@@ -155,7 +159,8 @@
 				return;
 			},
 			response: async function(bot, backend, message){
-				return `The admin role is now \<@&${server.modules.administration.roles.admin.id}\>`;
+				const newRole = backend.Server.attr.get(message.guild.id, "administration", "id", "roles", "admin");
+				return `The mod role is now \<@&${newRole}\>`;		
 			},
 			defaultPermLevel: 3,
 			possibleLengths: [2]
@@ -169,12 +174,13 @@
 				return "Success";
 			},
 			exec: async function(bot, backend, message){
-				backend.Server.attr.set(message.guild.id, message.mentions.roles.first().id, roles, mod);
+				backend.Server.attr.set(message.guild.id, "id", message.mentions.roles.first().id, "roles", "mod");
 
 				return;
 			},
 			response: async function(bot, backend, message){
-				return `The mod role is now \<@&${server.modules.administration.roles.mod.id}\>`;
+				const newRole = backend.Server.attr.get(message.guild.id, "administration", "id", "roles", "mod");
+				return `The mod role is now \<@&${newRole}\>`;
 			},
 			defaultPermLevel: 3,
 			possibleLengths: [2]
@@ -188,12 +194,13 @@
 				return "Success";
 			},
 			exec: async function(bot, backend, message){
-				backend.ServerAttr.set(message.guild.id, message.mentions.roles.first().id, roles, jmod);
+				backend.Server.attr.set(message.guild.id, "id", message.mentions.roles.first().id, "roles", "jmod");
 
 				return;
 			},
 			response: async function(bot, backend, message){
-				return `The junior mod role is now \<@&${server.modules.administration.roles.jmod.id}\>`;
+				const newRole = backend.Server.attr.get(message.guild.id, "administration", "id", "roles", "jmod");
+				return `The junior mod role is now \<@&${newRole}\>`;
 			},
 			defaultPermLevel: 3,
 			possibleLengths: [2]
@@ -256,9 +263,9 @@
 	}
 
 	exports.muteUser = async function(bot, userID, channelID, serverID, command) {
-		const server = bot.guilds.cache.get(serverID);
-		const user = server.members.get(userID);
-		const channel = server.channels.get(channelID);
+		const server = await bot.guilds.cache.get(serverID);
+		const user = await server.members.get(userID);
+		const channel = await server.channels.get(channelID);
 
 		let roleName = `Mute - ${channel.name}`;
 		if (!command) roleName = `AutoMute - ${channel.name}`;
@@ -275,9 +282,9 @@
 	}
 
 	exports.unmuteUser = async function(bot, userID, channelID, serverID, command){
-		const server = bot.guilds.cache.get(serverID);
-		const user = server.members.get(userID);
-		const channel = server.channels.get(channelID);
+		const server = await bot.guilds.cache.get(serverID);
+		const user = await server.members.get(userID);
+		const channel = await server.channels.get(channelID);
 
 		let roleName = `Mute - ${channel.name}`;
 		if (!command) roleName = `AutoMute - ${channel.name}`;

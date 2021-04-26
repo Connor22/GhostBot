@@ -13,8 +13,6 @@
 	modulesToLoad.push("default");
 	const commands = {};
 
-	const premodule = backend.runPreModuleTasks();
-
 	for (let module of modulesToLoad){
 		backend.modules[module] = module;
 
@@ -37,8 +35,6 @@
 		}
 	}
 
-	backend.runPostModuleTasks();
-
 /* MAIN FUNCTION */
 	GhostBot.on("message", message => {
 		/* CHECKS */
@@ -58,12 +54,13 @@
 
 	async function process(message){
 		/* CHECK IF SERVER IS INITIALIZED */
-			if (!backend.Server.active.get(message.guild.id, "default", "initialized")) return;
-			const prefix = backend.Server.prefix.get(message.guild.id);
-			message.split = helpers.splitCommand(message, (prefix ? prefix.length : 1));
+			if (!backend.Server.active.get(message.guild.id)) return;
 
 		/* CHECK IF BOT IS ENABLED IN CHANNEL */
-			if (!backend.Channel.isActive(message.channel.id, message.channel.name, message.guild.id)) return;
+			if (!backend.Channel.active.get(message.channel.id)) return;
+
+		/* ADD SPLIT MESSAGE FOR EASIER PARSING */
+			message.split = helpers.splitCommand(message, (prefix ? prefix.length : 1));
 
 		/* COMMAND PROCESSING */
 			//If message does not start with designated prefix, stop.
@@ -74,7 +71,7 @@
 			commandCheck(message);		
 	}
 
-	function commandCheck(message){
+	async function commandCheck(message){
 		const commandName = message.split[0];
 
 		//Main command checker block

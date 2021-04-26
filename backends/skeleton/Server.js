@@ -1,5 +1,6 @@
-exports.check = (id) => {
-
+exports.active = {
+	get: (id) => {},
+	set: (id, state) => {}
 };
 
 exports.refresh = () => {
@@ -18,11 +19,10 @@ exports.modules = {
 };
 
 exports.attr = {
-	add: (module, name, type, ...parents) => {},
 	get: (serverID, module, name ...parents) => {},
 	set: (serverID, module, value, name, ...parents) => {}
 };
 
-exports.addChannel = () => {
+exports.addChannel = (channelID) => {
 
 };

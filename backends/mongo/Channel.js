@@ -1,8 +1,9 @@
-exports.isActive = () => {
-
+exports.active = {
+	get: (id) => {},
+	set: (id, state) => {}
 };
 
 exports.attr = {
-	set: () => {},
-	get: () => {}
+	get: (channelID, module, name ...parents) => {},
+	set: (channelID, module, value, name, ...parents) => {}
 };
